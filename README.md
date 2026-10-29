@@ -17,13 +17,20 @@ The official Ivanti client is not required.
 
 ## 1. Install dependencies and commands
 
-On Fedora, from a desktop session:
+Install these dependencies using your preferred package manager:
 
-```sh
-sudo dnf install zsh NetworkManager-openconnect openconnect \
-  python3 python3-gobject webkit2gtk4.1 python3-cryptography \
-  libsecret gnome-keyring gnupg2 pinentry-gnome3 keepassxc python3-pyside6
-```
+- **Runtime:** Zsh and Python 3.13 or newer.
+- **VPN:** NetworkManager, its OpenConnect VPN plugin, and OpenConnect.
+- **Credentials:** KeePassXC (including `keepassxc-cli`), GnuPG, and a pinentry
+  program for unlocking your GPG key.
+- **Desktop integration:** GTK 3, WebKitGTK 4.1, libsoup 3, libsecret, and their
+  GObject introspection bindings, accessible through Python's PyGObject (`gi`).
+- **Python packages:** `cryptography` and `PySide6`; also `numpy` and `zxing-cpp`
+  if you use the optional Google Authenticator QR importer.
+
+Package names vary between distributions. The project's Python dependencies are
+declared in `pyproject.toml`. When using a virtual environment with system-installed
+PyGObject, create it from system Python with access to system site packages.
 
 NetworkManager must be running. Your desktop must provide a working, unlocked
 Secret Service keyring, such as GNOME Keyring. Minimal window-manager sessions
@@ -58,7 +65,6 @@ be overridden with `TIFR_INSTALL_DIR` and `TIFR_COMMAND_DIR` (absolute paths).
 Already enrolled only in Google Authenticator? Use the optional local importer:
 
 ```sh
-sudo dnf install python3-numpy python3-zxing-cpp
 tifr-import-totp          # scan using your webcam
 # Or, if the webcam is unsuitable:
 tifr-import-totp --image  # choose a QR image already on this computer
@@ -151,8 +157,7 @@ clicking `tifr-ivanti` in nm-applet does not invoke this helper and may fail wit
 - **Connection errors:** check `tifrvpn -s` and
   `journalctl -b -u NetworkManager --since '5 minutes ago'`. Remove personal
   information and authentication data before sharing diagnostics.
-- **Different Linux distribution:** install equivalent system Python/GTK/WebKit
-  dependencies. The launcher currently checks Fedora's VPN service path,
+- **VPN service path:** the launcher currently checks
   `/usr/libexec/nm-openconnect-service`; other layouts require adapting it.
 
 Passwords and the TOTP seed remain in your encrypted KeePassXC database. Its
@@ -163,9 +168,7 @@ Only the trusted TIFR SSO origin receives automatic credential entry.
 Keep the database, GPG keys, encrypted password file and authenticator QR images
 out of this repository. The `.gitignore` covers common secret-file formats.
 
-Setup references: [KeePassXC TOTP guide](https://keepassxc.org/docs/KeePassXC_UserGuide#_adding_totp_to_an_entry),
-[Fedora PySide6](https://packages.fedoraproject.org/pkgs/python-pyside6/python3-pyside6/),
-[Fedora QR decoder](https://packages.fedoraproject.org/pkgs/zxing-cpp/python3-zxing-cpp/).
+Setup reference: [KeePassXC TOTP guide](https://keepassxc.org/docs/KeePassXC_UserGuide#_adding_totp_to_an_entry).
 
 Offline checks: `python3 -B -m unittest discover -s tests -v` (no VPN or personal
 credentials are used).
