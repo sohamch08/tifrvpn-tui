@@ -10,10 +10,7 @@ tifrvpn -s   # status
 tifrvpn -d   # disconnect
 ```
 
-Unofficial. Tested on Fedora 44 with KeePassXC 2.8 and OpenConnect 9.12.
-These are terminal controls with a **graphical sign-in window**, not a headless
-VPN client. You need your own TIFR account and working authenticator enrollment.
-The official Ivanti client is not required.
+Unofficial. Tested on Fedora 44 with KeePassXC 2.8 and OpenConnect 9.12. These are terminal controls with a **graphical sign-in window**, not a headless VPN client. You need your own TIFR account and working authenticator enrollment. The official Ivanti client is not required.
 
 ## 1. Install dependencies and commands
 
@@ -134,14 +131,14 @@ Unlock GPG if prompted. If TIFR reports another active session, choose
 The window closes once the authenticated session is handed to NetworkManager.
 KeePassXC and your phone do not need to be open for daily connections.
 
-| Command | Action |
-| --- | --- |
-| `tifrvpn -c` | Connect, or report status if already connected |
-| `tifrvpn -d` | Disconnect |
-| `tifrvpn -s` | Show status, assigned addresses and DNS |
-| `tifrvpn` | Toggle connection |
+| Command                  | Action                                                       |
+| ------------------------ | ------------------------------------------------------------ |
+| `tifrvpn -c`             | Connect, or report status if already connected               |
+| `tifrvpn -d`             | Disconnect                                                   |
+| `tifrvpn -s`             | Show status, assigned addresses and DNS                      |
+| `tifrvpn`                | Toggle connection                                            |
 | `tifrvpn --forget-login` | Clear this helper's cached sessions; leave any tunnel active |
-| `tifr-otp --setup` | Replace the encrypted master password after changing it |
+| `tifr-otp --setup`       | Replace the encrypted master password after changing it      |
 
 The applet can display/disconnect this connection. **Connect using `tifrvpn -c`**:
 clicking `tifr-ivanti` in nm-applet does not invoke this helper and may fail with
