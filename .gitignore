@@ -1,0 +1,38 @@
+# Python-generated files
+__pycache__/
+*.py[cod]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv/
+venv/
+
+# Python tool caches and coverage
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+/config.json
+*.kdbx*
+*.gpg
+*.asc
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Authenticator QR images must stay local
+*.png
+*.jpg
+*.jpeg
+*.webp
