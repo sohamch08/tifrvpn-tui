@@ -1,0 +1,148 @@
+#!/usr/bin/zsh -f
+# NetworkManager/OpenConnect implementation; loaded only when invoked.
+typeset _tifr_auth_helper="${0:A:h}/tifr-vpn-auth.py"
+
+function _tifr_require_nm() {
+  if ! (( $+commands[nmcli] && $+commands[openconnect] && $+commands[python3] )) ||
+      [[ ! -x /usr/libexec/nm-openconnect-service ]]; then
+    print -u2 -- 'Install dependencies listed in README.md (NetworkManager-openconnect, OpenConnect and system Python bindings).'
+    return 1
+  fi
+  nmcli general status >/dev/null
+}
+
+function _tifr_profile_uuid() {
+  local uuid
+  uuid=$(nmcli --get-values connection.uuid connection show id tifr-ivanti 2>/dev/null) || return 1
+  if [[ -z "$uuid" || "$uuid" == *$'\n'* ]]; then
+    print -u2 -- 'tifr VPN: expected one NetworkManager profile named tifr-ivanti.'
+    return 1
+  fi
+  print -r -- "$uuid"
+}
+
+function tifr-setup() {
+  if (( $# != 0 )); then
+    print -u2 -- 'Usage: tifr-setup'
+    return 2
+  fi
+  _tifr_require_nm || return 1
+  local uuid service
+  if uuid=$(_tifr_profile_uuid); then
+    service=$(nmcli --get-values vpn.service-type connection show uuid "$uuid") || return 1
+    if [[ "$service" != org.freedesktop.NetworkManager.openconnect ]]; then
+      print -u2 -- 'tifr VPN: tifr-ivanti exists but uses a different VPN plugin; rename it before setup.'
+      return 1
+    fi
+    nmcli connection modify uuid "$uuid" connection.autoconnect no \
+      +vpn.data 'gateway=https://sslvpn.tifr.res.in/tifruser,protocol=nc,prevent_invalid_cert=yes,cookie-flags=2,gateway-flags=2,gwcert-flags=2,resolve-flags=2' || return 1
+  else
+    # Do not create a second profile if the name is ambiguous or NM is unavailable.
+    local names
+    names=$(nmcli --get-values NAME connection show) || return 1
+    if print -r -- "$names" | grep -Fxq -- tifr-ivanti; then
+      print -u2 -- 'tifr VPN: ambiguous tifr-ivanti profile; resolve duplicate names before setup.'
+      return 1
+    fi
+    nmcli connection add type vpn vpn-type openconnect con-name tifr-ivanti \
+      connection.permissions "user:$(id -un)" connection.autoconnect no \
+      vpn.data 'gateway=https://sslvpn.tifr.res.in/tifruser,protocol=nc,prevent_invalid_cert=yes,cookie-flags=2,gateway-flags=2,gwcert-flags=2,resolve-flags=2' || return 1
+  fi
+  print -P '%F{green}✔%f tifr VPN: Ivanti profile ready (NetworkManager/OpenConnect)'
+}
+
+function _tifr_nm_state() {
+  LC_ALL=C nmcli --get-values GENERAL.STATE connection show uuid "$1"
+}
+
+function tifr-on() {
+  _tifr_require_nm || return 1
+  local uuid state
+  uuid=$(_tifr_profile_uuid) || {
+    tifr-setup || return 1
+    uuid=$(_tifr_profile_uuid) || return 1
+  }
+  state=$(_tifr_nm_state "$uuid") || return 1
+  if [[ "$state" == activated ]]; then
+    tifr-status
+    return
+  elif [[ -n "$state" && "$state" != deactivated ]]; then
+    print -r -- "tifr VPN: $state; wait or run tifrvpn -d before retrying."
+    return 1
+  fi
+  print -P '%F{yellow}⋯%f tifr VPN: checking saved sign-in for sslvpn.tifr.res.in'
+  python3 "$_tifr_auth_helper" "$uuid" || return $?
+  tifr-status || return 1
+  notify-send -a tifrvpn 'tifr VPN' 'Connected' 2>/dev/null || true
+}
+
+function tifr-off() {
+  _tifr_require_nm || return 1
+  local uuid state
+  uuid=$(_tifr_profile_uuid) || {
+    print -- 'tifr VPN: no tifr-ivanti profile; nothing to disconnect.'
+    return 0
+  }
+  state=$(_tifr_nm_state "$uuid") || return 1
+  if [[ -z "$state" || "$state" == deactivated ]]; then
+    print -- 'tifr VPN: already disconnected'
+    return 0
+  fi
+  nmcli --wait 20 connection down uuid "$uuid" || return $?
+  print -P '%F{yellow}○%f tifr VPN: Disconnected'
+  notify-send -a tifrvpn 'tifr VPN' 'Disconnected' 2>/dev/null || true
+}
+
+function tifr-status() {
+  _tifr_require_nm || return 1
+  local uuid state
+  uuid=$(_tifr_profile_uuid) || {
+    print -- 'tifr VPN: not configured; run tifrvpn --setup'
+    return 1
+  }
+  state=$(_tifr_nm_state "$uuid") || return 1
+  if [[ "$state" != activated ]]; then
+    print -r -- "tifr VPN: ${state:-disconnected}"
+    return 1
+  fi
+  print -P '%F{green}●%f tifr VPN: Connected (Ivanti/OpenConnect)'
+  nmcli --fields GENERAL.STATE,GENERAL.DEVICES,IP4.ADDRESS,IP4.DNS,IP6.ADDRESS,IP6.DNS \
+    connection show uuid "$uuid"
+}
+
+function tifrvpn() {
+  if (( $# > 1 )) && [[ "$1" != --setup ]]; then
+    print -u2 -- 'Usage: tifrvpn [-c|-d|-s|--setup|--forget-login|--help]'
+    return 2
+  fi
+  case "$1" in
+    -c) tifr-on; return ;;
+    -d) tifr-off; return ;;
+    -s) tifr-status; return ;;
+    --setup) shift; tifr-setup "$@"; return ;;
+    --forget-login) python3 "$_tifr_auth_helper" --forget-login; return ;;
+    -h|--help)
+      print -r -- 'Usage: tifrvpn [-c|-d|-s|--setup|--forget-login] (no option: toggle)'
+      print -r -- 'Server: https://sslvpn.tifr.res.in/tifruser (Ivanti SSL VPN)'
+      print -r -- 'Reuses a valid saved session; otherwise fills TIFR SSO from KeePassXC/GPG.'
+      print -r -- 'TIFR may ask you to confirm replacing another active session.'
+      print -r -- '--forget-login clears remembered sign-in state from the desktop keyring.'
+      print -r -- 'TOTP from KeePassXC/GPG: tifr-otp (first run: tifr-otp --setup)'
+      return 0 ;;
+    '') ;;
+    *) print -u2 -- 'Usage: tifrvpn [-c|-d|-s|--setup|--forget-login|--help]'; return 2 ;;
+  esac
+  _tifr_require_nm || return 1
+  local uuid state
+  if uuid=$(_tifr_profile_uuid); then
+    state=$(_tifr_nm_state "$uuid") || return 1
+    if [[ -n "$state" && "$state" != deactivated ]]; then
+      tifr-off
+      return
+    fi
+  fi
+  tifr-on
+}
+
+
+tifrvpn "$@"
