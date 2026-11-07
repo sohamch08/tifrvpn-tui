@@ -4,6 +4,7 @@ import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 from .errors import ConfigurationError
 
@@ -55,6 +56,7 @@ def load_config() -> Config:
         raise ConfigurationError(
             "Configuration accepts only nonempty database, entry and password_file strings."
         )
+    settings = cast(dict[str, str], settings)
     database = Path(
         os.environ.get(
             "TIFR_KEEPASS_DATABASE",
