@@ -24,7 +24,10 @@ class AuthTests(unittest.TestCase):
                 "run",
                 return_value=subprocess.CompletedProcess([], 0, "DSID=example"),
             ) as run,
-            patch.dict(os.environ, {"TIFR_KEEPASS_ENTRY": "original"}),
+            patch.dict(
+                os.environ,
+                {"TIFR_KEEPASS_ENTRY": "original", "PYTHONPATH": "/example/path"},
+            ),
         ):
             self.assertEqual(auth.authenticate(config=config), "DSID=example")
             self.assertEqual(os.environ["TIFR_KEEPASS_ENTRY"], "original")
@@ -33,29 +36,7 @@ class AuthTests(unittest.TestCase):
         env = run.call_args.kwargs["env"]
         self.assertEqual(env["TIFR_KEEPASS_ENTRY"], "VPN/custom")
         self.assertEqual(env["TIFR_KEEPASS_DATABASE"], "/example/custom.kdbx")
-        self.assertTrue(
-            (Path(env["PYTHONPATH"].split(os.pathsep)[0]) / "tifrvpn").is_dir()
-        )
-
-    def test_worker_reachable_from_unrelated_directory(self):
-        # --help exits before loading GTK or opening a window.
-        with patch.object(
-            auth.subprocess,
-            "run",
-            return_value=subprocess.CompletedProcess([], 0, "DSID=example"),
-        ) as run:
-            auth.authenticate()
-            env = run.call_args.kwargs["env"]
-        result = subprocess.run(
-            [os.sys.executable, "-m", "tifrvpn._sso_worker", "--help"],
-            check=False,
-            cwd="/",
-            env=env,
-            capture_output=True,
-            text=True,
-        )
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("--quiet", result.stdout)
+        self.assertEqual(env["PYTHONPATH"], "/example/path")
 
     def test_malformed_worker_output_never_becomes_a_session(self):
         for value in ("", "example", "DSID=example\nother", "DSID=example\0"):

@@ -1,4 +1,4 @@
-"""Offline packaging/configuration checks; no real vault, keyring or VPN access."""
+"""Configuration, credential parsing and TOTP checks without personal data."""
 
 import contextlib
 import io
@@ -14,69 +14,20 @@ from tifrvpn import credentials as OTP
 from tifrvpn import totp as QR
 from tifrvpn.config import load_config
 
-ROOT = Path(__file__).resolve().parents[1]
 
-
-class SetupTests(unittest.TestCase):
+class ConfigurationTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix="tifr setup ")
         self.addCleanup(self.temporary.cleanup)
         self.home = Path(self.temporary.name)
         self.environment = dict(os.environ, HOME=str(self.home))
         for name in (
-            "TIFR_INSTALL_DIR",
-            "TIFR_COMMAND_DIR",
             "XDG_CONFIG_HOME",
             "TIFR_KEEPASS_DATABASE",
             "TIFR_KEEPASS_ENTRY",
             "TIFR_KEEPASS_PASSWORD_FILE",
         ):
             self.environment.pop(name, None)
-
-    def install(self):
-        return subprocess.run(
-            [str(ROOT / "install.sh")],
-            check=False,
-            cwd="/",
-            env=self.environment,
-            capture_output=True,
-            text=True,
-        )
-
-    def test_install_from_another_directory_and_command_symlinks(self):
-        result = self.install()
-        self.assertEqual(result.returncode, 0, result.stderr)
-        for command in ("tifrvpn", "tifr-otp", "tifr-import-totp"):
-            executable = self.home / ".local/bin" / command
-            self.assertTrue(executable.is_symlink())
-            result = subprocess.run(
-                [str(executable), "--help"],
-                check=False,
-                cwd="/",
-                env=self.environment,
-                capture_output=True,
-                text=True,
-            )
-            self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertFalse((self.home / ".zshrc").exists())
-        self.assertEqual(self.install().returncode, 0)
-
-    def test_unrelated_command_is_preserved_before_any_copy(self):
-        command = self.home / ".local/bin/tifrvpn"
-        command.parent.mkdir(parents=True)
-        command.write_text("existing command")
-        self.assertNotEqual(self.install().returncode, 0)
-        self.assertEqual(command.read_text(), "existing command")
-        self.assertFalse((self.home / "bin/tifr").exists())
-
-    def test_custom_install_locations(self):
-        self.environment.update(
-            TIFR_INSTALL_DIR=str(self.home / "custom helpers"),
-            TIFR_COMMAND_DIR=str(self.home / "custom commands"),
-        )
-        self.assertEqual(self.install().returncode, 0)
-        command = self.home / "custom commands/tifrvpn"
-        self.assertEqual(command.resolve(), self.home / "custom helpers/tifrvpn")
 
     def configure(self, settings):
         config = self.home / ".config/tifr-vpn/config.json"

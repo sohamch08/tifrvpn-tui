@@ -7,7 +7,6 @@ import signal
 import ssl
 import subprocess
 import sys
-from pathlib import Path
 from urllib.error import HTTPError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, HTTPSHandler, Request, build_opener
@@ -85,12 +84,6 @@ def authenticate(*, quiet=False, config=None, on_progress=None):
     # Isolate WebKit from the tunnel controller, including its native shutdown.
     command = [sys.executable, "-m", "tifrvpn._sso_worker"]
     environment = dict(os.environ)
-    # Source launchers and the offline installer add a package search path only
-    # in the controller. Carry it into the isolated Python interpreter too.
-    package_root = str(Path(__file__).resolve().parent.parent)
-    environment["PYTHONPATH"] = os.pathsep.join(
-        filter(None, (package_root, environment.get("PYTHONPATH")))
-    )
     environment.pop("_TIFR_WORKER_CONFIG", None)
     if config is not None:
         environment.update(
