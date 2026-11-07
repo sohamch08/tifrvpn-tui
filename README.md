@@ -1,6 +1,7 @@
-# TIFR VPN from the terminal
+# TIFR VPN Python package
 
-Connect to **https://sslvpn.tifr.res.in/tifruser** with NetworkManager/OpenConnect.
+A Python library and terminal commands for connecting to
+**https://sslvpn.tifr.res.in/tifruser** with NetworkManager/OpenConnect.
 Reuse an existing session, or automatically fill TIFR SSO using a KeePassXC entry
 containing your username, password and TOTP setup key.
 
@@ -35,27 +36,30 @@ NetworkManager must be running. Your desktop must provide a working, unlocked
 Secret Service keyring, such as GNOME Keyring. Minimal window-manager sessions
 may need desktop keyring and PolicyKit authentication-agent setup first.
 
-From this checkout, run **as your normal user**:
+Install this checkout as a Python package, **as your normal user**. Create a
+virtual environment with access to your system Python bindings:
 
 ```sh
-./install.sh
-export PATH="$HOME/.local/bin:$PATH"
+python3 -m venv --system-site-packages .venv
+.venv/bin/python -m pip install .
+source .venv/bin/activate
 ```
 
-The installer copies the Python package into `~/bin/tifr/lib/` and thin
-compatibility launchers into `~/bin/tifr/`. It links `tifrvpn`, `tifr-otp` and
-`tifr-import-totp` into `~/.local/bin/`. Keep that directory on your shell's
-`PATH`. No helper needs sourcing; nothing runs at shell startup. Commands use
-Python and work independently of your login shell. The installer does not
-download Python packages; install the dependencies listed above first.
+Use system Python 3.13 or newer when creating the environment. If you already
+have a suitable environment, activate it and run `python -m pip install .`.
+The installation creates `tifrvpn`, `tifr-otp` and `tifr-import-totp` in that
+environment's command directory and makes `import tifrvpn` available.
+Activate the environment whenever you want to use its commands.
 
-Re-run `./install.sh` after updating this checkout. Installation directories can
-be overridden with `TIFR_INSTALL_DIR` and `TIFR_COMMAND_DIR` (absolute paths).
+Python dependencies are installed from `pyproject.toml`; the system dependencies
+listed above must be installed separately. After updating the checkout, rerun
+the package installation to update the installed version. For development,
+use the editable installation described below.
 
 ## 2. Save your own login in KeePassXC
 
 1. Create/open a **password-protected** database. The default location expected
-   by these scripts is `~/Documents/KeePass/Passwords.kdbx`.
+   by the package is `~/Documents/KeePass/Passwords.kdbx`.
 2. Create an entry named **TIFR**. Fill in your TIFR SSO **Username** and
    **Password**, click **OK** to create the entry, then select it in the list.
 3. Right-click the saved entry → **TOTP → Set up TOTP…**. Enter the setup key
@@ -183,20 +187,23 @@ Setup reference: [KeePassXC TOTP guide](https://keepassxc.org/docs/KeePassXC_Use
 ## Python library and development
 
 The import name is **`tifrvpn`**; the distribution name remains `tifrvpn-tui`.
-To install the library and generated commands into a development environment,
-run from this checkout:
+For development, install the checkout in editable mode inside the environment
+created above:
 
 ```sh
-python3 -m venv --system-site-packages .venv
-.venv/bin/python -m pip install -e .
-source .venv/bin/activate
+python -m pip install -e .
 ```
 
-Use system Python so the virtual environment can access its PyGObject bindings.
-The package installer installs declared Python dependencies; system programs
-and GTK/WebKit/Secret Service bindings still need the packages listed above.
-This is an alternative to `install.sh`; the offline copy installer makes the
-commands available but does not register the library in Python site-packages.
+With uv, the equivalent command is:
+
+```sh
+uv pip install --python .venv/bin/python -e .
+```
+
+An editable installation uses the source files directly, so Python code changes
+are available without reinstalling. Reinstall after changing package metadata
+or command entry points. System programs and GTK/WebKit/Secret Service bindings
+are still required for the features that use them.
 
 ```python
 import tifrvpn
@@ -263,15 +270,15 @@ code = get_code()  # returns the KeePassXC TOTP rather than printing it
 | `cli` | Arguments, terminal output, notifications and exit codes |
 | `_sso_worker` | Private isolated WebKit subprocess entry point |
 
-`python -m tifrvpn` runs the same CLI as `tifrvpn`. The original root script
-names remain as compatibility launchers; their implementations live under
-`src/tifrvpn/`.
+`python -m tifrvpn` runs the same CLI as `tifrvpn`. All implementation lives
+under `src/tifrvpn/`. The three commands are generated during package
+installation from the entry points in `pyproject.toml`.
 
-Offline checks from a checkout:
+Offline checks after installing the package:
 
 ```sh
-PYTHONPATH=src python3 -B -m unittest discover -s tests -v
-uv build --offline
+python -B -m unittest discover -s tests -v
+uv build
 ```
 
 Tests use fake commands and services; they do not access personal credentials,
