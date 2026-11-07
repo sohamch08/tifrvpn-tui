@@ -1,0 +1,5 @@
+{
+  "database": "~/Documents/KeePass/Passwords.kdbx",
+  "password_file": "~/.local/share/tifr-vpn/keepass-password.gpg",
+  "entry": "TIFR"
+}

@@ -17,7 +17,7 @@ Unofficial. Tested on Fedora 44 with KeePassXC 2.8 and OpenConnect 9.12. These a
 
 Install these dependencies using your preferred package manager:
 
-- **Runtime:** Zsh and Python 3.13 or newer.
+- **Runtime:** Python 3.13 or newer.
 - **VPN:** NetworkManager, its OpenConnect VPN plugin, and OpenConnect.
 - **Credentials:** KeePassXC (including `keepassxc-cli`), GnuPG, and a pinentry
   program for unlocking your GPG key.
@@ -42,10 +42,12 @@ From this checkout, run **as your normal user**:
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
-The installer copies five helpers into `~/bin/tifr/` and links `tifrvpn`,
-`tifr-otp` and `tifr-import-totp` into `~/.local/bin/`. Keep that directory on
-your shell's `PATH`. No helper needs sourcing; nothing runs at shell startup.
-Your login shell can be Bash, Zsh or another shell; the VPN launcher uses Zsh.
+The installer copies the Python package into `~/bin/tifr/lib/` and thin
+compatibility launchers into `~/bin/tifr/`. It links `tifrvpn`, `tifr-otp` and
+`tifr-import-totp` into `~/.local/bin/`. Keep that directory on your shell's
+`PATH`. No helper needs sourcing; nothing runs at shell startup. Commands use
+Python and work independently of your login shell. The installer does not
+download Python packages; install the dependencies listed above first.
 
 Re-run `./install.sh` after updating this checkout. Installation directories can
 be overridden with `TIFR_INSTALL_DIR` and `TIFR_COMMAND_DIR` (absolute paths).
@@ -178,5 +180,100 @@ out of this repository. The `.gitignore` covers common secret-file formats.
 
 Setup reference: [KeePassXC TOTP guide](https://keepassxc.org/docs/KeePassXC_UserGuide#_adding_totp_to_an_entry).
 
-Offline checks: `python3 -B -m unittest discover -s tests -v` (no VPN or personal
-credentials are used).
+## Python library and development
+
+The import name is **`tifrvpn`**; the distribution name remains `tifrvpn-tui`.
+To install the library and generated commands into a development environment,
+run from this checkout:
+
+```sh
+python3 -m venv --system-site-packages .venv
+.venv/bin/python -m pip install -e .
+source .venv/bin/activate
+```
+
+Use system Python so the virtual environment can access its PyGObject bindings.
+The package installer installs declared Python dependencies; system programs
+and GTK/WebKit/Secret Service bindings still need the packages listed above.
+This is an alternative to `install.sh`; the offline copy installer makes the
+commands available but does not register the library in Python site-packages.
+
+```python
+import tifrvpn
+
+connection = tifrvpn.status()
+print(connection.state, connection.devices)
+
+# These perform the same operations as tifrvpn -c and tifrvpn -d.
+connection = tifrvpn.connect(quiet=True, on_progress=print)
+tifrvpn.disconnect()
+```
+
+`setup()` creates or updates the NetworkManager profile and returns its UUID.
+`forget_login()` clears saved sign-in state without disconnecting a tunnel.
+`status()`, `connect()` and `disconnect()` return a frozen `VPNStatus` with
+`state`, `profile_uuid`, `details`, `devices`, `connected`, and `changed`.
+Intermediate NetworkManager states are preserved. A missing profile is reported
+as `not-configured`. Expected public VPN-operation failures raise `VPNError`
+(or a subclass), which exposes the command's `returncode` where applicable.
+
+Settings use the same config file and environment variables as the commands.
+You can also supply a `Config` directly, without changing process environment:
+
+```python
+from pathlib import Path
+from tifrvpn import Config, VPNError, connect
+
+settings = Config(
+    database=Path("~/Documents/KeePass/Passwords.kdbx"),
+    password_file=Path("~/.local/share/tifr-vpn/keepass-password.gpg"),
+    entry="VPN/TIFR",
+)
+try:
+    connection = connect(config=settings)
+except VPNError as error:
+    print(str(error))
+```
+
+Importing the package does not read credentials, start subprocesses, create
+windows, or contact the server. VPN operations are synchronous and may open
+sign-in or GPG dialogs; `quiet=True` hides the SSO browser using Xvfb. Progress
+is sent to the optional callback. With no callback, the controller does not
+print progress. The CLI uses the callback for its terminal messages.
+
+Specialized helpers are available through their modules:
+
+```python
+from tifrvpn.credentials import get_code
+from tifrvpn.totp import decode_export, current_code
+
+code = get_code()  # returns the KeePassXC TOTP rather than printing it
+```
+
+| Module | Responsibility |
+| --- | --- |
+| `vpn` | Public connection operations and `VPNStatus` |
+| `networkmanager` | Profile management, tunnel activation and state queries |
+| `config` | Validated settings and environment overrides |
+| `credentials` | KeePassXC access, GPG decryption and atomic password-file writes |
+| `keyring` | Remembered VPN and browser sessions in Secret Service |
+| `auth` | Session validation, worker launch and Xvfb lifecycle |
+| `totp` | Authenticator export decoding and TOTP calculation |
+| `gui` | SSO window, credential setup dialogs and QR importer |
+| `cli` | Arguments, terminal output, notifications and exit codes |
+| `_sso_worker` | Private isolated WebKit subprocess entry point |
+
+`python -m tifrvpn` runs the same CLI as `tifrvpn`. The original root script
+names remain as compatibility launchers; their implementations live under
+`src/tifrvpn/`.
+
+Offline checks from a checkout:
+
+```sh
+PYTHONPATH=src python3 -B -m unittest discover -s tests -v
+uv build --offline
+```
+
+Tests use fake commands and services; they do not access personal credentials,
+change NetworkManager profiles or connect to the VPN. A live desktop sign-in
+and tunnel connection still need verification with your own TIFR account.

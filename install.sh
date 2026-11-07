@@ -5,7 +5,7 @@ set -eu
 if [ "${1:-}" = --help ]; then
     cat <<'EOF'
 Usage: ./install.sh
-Copies the helpers to ~/bin/tifr and links commands into ~/.local/bin.
+Copies the package and launchers to ~/bin/tifr and links commands into ~/.local/bin.
 Override with TIFR_INSTALL_DIR and TIFR_COMMAND_DIR (absolute paths).
 Run again after updating the checkout to install the new version.
 EOF
@@ -49,6 +49,15 @@ for file in tifrvpn tifr-vpn-auth.py tifr-otp.py tifr-import-totp tifr-import-to
     if [ "$(readlink -f -- "$source_dir/$file")" != "$(readlink -f -- "$install_dir/$file")" ]; then
         install -m 755 -- "$source_dir/$file" "$install_dir/$file"
     fi
+done
+# Keep the importable package beside the launchers without downloading packages.
+# Python dependencies and system bindings must already be installed.
+mkdir -p -- "$install_dir/lib/tifrvpn/gui"
+for module in "$source_dir"/src/tifrvpn/*.py; do
+    install -m 644 -- "$module" "$install_dir/lib/tifrvpn/"
+done
+for module in "$source_dir"/src/tifrvpn/gui/*.py; do
+    install -m 644 -- "$module" "$install_dir/lib/tifrvpn/gui/"
 done
 ln -sfn -- "$install_dir/tifrvpn" "$command_dir/tifrvpn"
 ln -sfn -- "$install_dir/tifr-otp.py" "$command_dir/tifr-otp"
