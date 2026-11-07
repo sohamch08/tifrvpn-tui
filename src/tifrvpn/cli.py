@@ -20,7 +20,7 @@ TOTP from KeePassXC/GPG: tifr-otp (first run: tifr-otp --setup)"""
 
 
 def _progress(message):
-    # Match the launcher's colored status symbols, including redirected output.
+    # Color status symbols consistently, including redirected output.
     for symbol, color in (("✔", 32), ("●", 32), ("⋯", 33), ("○", 33)):
         if message.startswith(symbol):
             message = f"\033[{color}m{symbol}\033[39m" + message[1:]
@@ -237,61 +237,6 @@ def import_totp_main(argv=None):
     except Exception:  # noqa: BLE001 - Never expose authentication data from backend errors.
         print(
             "The local QR scanner could not start. No QR contents were logged.",
-            file=sys.stderr,
-        )
-        return 1
-
-
-def auth_main(argv=None):
-    """Compatibility for the former standalone authentication helper."""
-    argv = sys.argv[1:] if argv is None else argv
-    if argv in (["--sso-window"], ["--sso-window", "--quiet"]):
-        from ._sso_worker import sso_window_process
-
-        sso_window_process(quiet="--quiet" in argv)
-    if argv == ["--forget-login"]:
-        return main(argv)
-    parser = argparse.ArgumentParser(
-        description="Sign in to TIFR SSO, then hand an in-memory session to NetworkManager."
-    )
-    parser.add_argument("uuid", metavar="NETWORKMANAGER_PROFILE_UUID")
-    parser.add_argument(
-        "--quiet", action="store_true", help="hide the SSO browser using Xvfb"
-    )
-    args = parser.parse_args(argv)
-    from . import auth, keyring
-    from . import networkmanager as nm
-
-    try:
-        nm.validate_profile(args.uuid)
-        cookie = keyring.load_session(on_progress=_progress)
-        if cookie and auth.valid_session(cookie):
-            _progress("tifr VPN: reusing saved session")
-        else:
-            if cookie:
-                keyring.clear_session(on_progress=_progress)
-                _progress(
-                    "tifr VPN: saved session expired; TIFR requires sign-in again."
-                )
-            cookie = auth.authenticate(quiet=args.quiet, on_progress=_progress)
-            keyring.save_session(cookie, on_progress=_progress)
-        nm.activate(args.uuid, cookie, on_progress=_progress)
-        return 0
-    except KeyboardInterrupt:
-        print("\ntifr VPN: cancelled", file=sys.stderr)
-        return 130
-    except VPNError as error:
-        print(f"tifr VPN: {error}", file=sys.stderr)
-        return error.returncode
-    except ImportError:
-        print(
-            "tifr VPN: install dependencies: sudo dnf install python3-gobject webkit2gtk4.1 python3-cryptography",
-            file=sys.stderr,
-        )
-        return 1
-    except (ValueError, OSError, subprocess.SubprocessError):
-        print(
-            "tifr VPN: could not prepare the VPN session; check the preceding errors.",
             file=sys.stderr,
         )
         return 1
