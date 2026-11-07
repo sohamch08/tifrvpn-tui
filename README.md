@@ -6,6 +6,7 @@ containing your username, password and TOTP setup key.
 
 ```sh
 tifrvpn -c   # connect
+tifrvpn -c --quiet  # connect without showing the SSO browser
 tifrvpn -s   # status
 tifrvpn -d   # disconnect
 ```
@@ -24,6 +25,7 @@ Install these dependencies using your preferred package manager:
   GObject introspection bindings, accessible through Python's PyGObject (`gi`).
 - **Python packages:** `cryptography` and `PySide6`; also `numpy` and `zxing-cpp`
   if you use the optional Google Authenticator QR importer.
+- **Background sign-in (optional):** Xvfb, the `xvfb-run` wrapper, and `xauth`.
 
 Package names vary between distributions. The project's Python dependencies are
 declared in `pyproject.toml`. When using a virtual environment with system-installed
@@ -130,6 +132,15 @@ Unlock GPG if prompted. If TIFR reports another active session, choose
 **Continue the session** only if you want to disconnect that other session.
 The window closes once the authenticated session is handed to NetworkManager.
 KeePassXC and your phone do not need to be open for daily connections.
+
+For background sign-in, use `tifrvpn -c --quiet` (or just `tifrvpn --quiet`).
+GPG unlocks on your normal desktop first if needed, then the SSO browser runs
+on a private Xvfb display. Terminal progress and errors remain visible. If TIFR
+requires confirmation or rejects the login, quiet mode stops; retry `tifrvpn -c`
+to see the page. Background sign-in times out after two minutes and cleans up
+the browser and virtual display. It never automatically replaces another session.
+
+Optional shell shortcut: `alias tifr-quiet='tifrvpn -c --quiet'`.
 
 | Command                  | Action                                                       |
 | ------------------------ | ------------------------------------------------------------ |
