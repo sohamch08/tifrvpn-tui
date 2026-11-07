@@ -71,7 +71,7 @@ function tifr-on() {
     return 1
   fi
   print -P '%F{yellow}⋯%f tifr VPN: checking saved sign-in for sslvpn.tifr.res.in'
-  python3 "$_tifr_auth_helper" "$uuid" || return $?
+  python3 "$_tifr_auth_helper" "$uuid" "$@" || return $?
   tifr-status || return 1
   notify-send -a tifrvpn 'tifr VPN' 'Connected' 2>/dev/null || true
 }
@@ -111,21 +111,42 @@ function tifr-status() {
 }
 
 function tifrvpn() {
-  if (( $# > 1 )) && [[ "$1" != --setup ]]; then
-    print -u2 -- 'Usage: tifrvpn [-c|-d|-s|--setup|--forget-login|--help]'
-    return 2
+  local action='' argument
+  local -i quiet=0
+  for argument in "$@"; do
+    case "$argument" in
+      --quiet) quiet=1 ;;
+      -c|-d|-s|--setup|--forget-login|-h|--help)
+        if [[ -n "$action" ]]; then
+          print -u2 -- 'Choose one action: -c, -d, -s, --setup, --forget-login or --help.'
+          return 2
+        fi
+        action=$argument ;;
+      *) print -u2 -- 'Usage: tifrvpn [-c [--quiet]|-d|-s|--setup|--forget-login|--help]'; return 2 ;;
+    esac
+  done
+  if (( quiet )); then
+    if [[ -n "$action" && "$action" != -c ]]; then
+      print -u2 -- '--quiet is only supported when connecting (-c).'
+      return 2
+    fi
+    action=-c
   fi
-  case "$1" in
-    -c) tifr-on; return ;;
+  case "$action" in
+    -c)
+      if (( quiet )); then tifr-on --quiet; else tifr-on; fi
+      return ;;
     -d) tifr-off; return ;;
     -s) tifr-status; return ;;
-    --setup) shift; tifr-setup "$@"; return ;;
+    --setup) tifr-setup; return ;;
     --forget-login) python3 "$_tifr_auth_helper" --forget-login; return ;;
     -h|--help)
-      print -r -- 'Usage: tifrvpn [-c|-d|-s|--setup|--forget-login] (no option: toggle)'
+      print -r -- 'Usage: tifrvpn [-c [--quiet]|-d|-s|--setup|--forget-login] (no option: toggle)'
       print -r -- 'Server: https://sslvpn.tifr.res.in/tifruser (Ivanti SSL VPN)'
       print -r -- 'Reuses a valid saved session; otherwise fills TIFR SSO from KeePassXC/GPG.'
       print -r -- 'TIFR may ask you to confirm replacing another active session.'
+      print -r -- '--quiet hides the SSO browser using Xvfb (120-second limit); terminal messages remain visible.'
+      print -r -- '--quiet alone connects. GPG can prompt before background sign-in; retry without --quiet if TIFR needs input.'
       print -r -- '--forget-login clears remembered sign-in state from the desktop keyring.'
       print -r -- 'TOTP from KeePassXC/GPG: tifr-otp (first run: tifr-otp --setup)'
       return 0 ;;

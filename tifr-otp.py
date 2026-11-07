@@ -73,13 +73,17 @@ def configuration():
     return database, password_file, entry
 
 
-def decrypt_password(password_file):
+def decrypt_password(password_file, *, allow_prompt=True):
     if not password_file.is_file():
         raise RuntimeError("Encrypted password file not found. Run tifr-otp --setup first.")
     if sys.stdin.isatty():
         os.environ["GPG_TTY"] = os.ttyname(sys.stdin.fileno())
+    command = ["gpg", "--quiet"]
+    if not allow_prompt:
+        # A pinentry window on Xvfb would be invisible. Fail instead of waiting.
+        command += ["--batch", "--no-tty", "--pinentry-mode", "error"]
     decrypted = subprocess.run(
-        ["gpg", "--quiet", "--decrypt", "--", str(password_file)],
+        command + ["--decrypt", "--", str(password_file)],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
     )
     if decrypted.returncode:

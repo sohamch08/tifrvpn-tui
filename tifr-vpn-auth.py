@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Sign in to TIFR SSO, then hand an in-memory session to NetworkManager."""
 
+import argparse
 import base64
 import hashlib
 import json
 import os
 import runpy
+import shutil
+import signal
 import socket
 import ssl
 import subprocess
@@ -17,6 +20,12 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener, HTTPSHand
 
 URL = "https://sslvpn.tifr.res.in/tifruser"
 HOST = "sslvpn.tifr.res.in"
+BACKGROUND_TIMEOUT = 120
+
+CONFIRMATION_SCRIPT = """(() => {
+  if (location.origin !== 'https://sslvpn.tifr.res.in') return false;
+  return /There are already other user sessions in progress|Continue will result in termination of the other session/i.test(document.body?.innerText || '');
+})()"""
 
 
 def signin_script(values=None):
@@ -96,7 +105,7 @@ def valid_session(cookie):
         raise
 
 
-def login_cookie():
+def login_cookie(*, quiet=False):
     import gi
     gi.require_version("Gtk", "3.0")
     gi.require_version("WebKit2", "4.1")
@@ -133,6 +142,10 @@ def login_cookie():
             state = json.loads(source.evaluate_javascript_finish(result).to_string())
             if state.get("error"):
                 autofill["stopped"] = True
+                if quiet:
+                    session["error"] = "SSO rejected the saved login. Retry tifrvpn -c to see the error."
+                    Gtk.main_quit()
+                    return
                 print("tifr VPN: SSO reported an error; autofill stopped. Check the sign-in window and saved credentials.", file=sys.stderr)
                 return
             step = state.get("step")
@@ -141,7 +154,7 @@ def login_cookie():
             if autofill["provider"] is None:
                 helper = runpy.run_path(os.path.join(os.path.dirname(os.path.abspath(__file__)), "tifr-otp.py"))
                 database, password_file, entry = helper["configuration"]()
-                master = helper["decrypt_password"](password_file)
+                master = helper["decrypt_password"](password_file, allow_prompt=not quiet)
                 login = helper["read_login"](master, database, entry)
                 autofill["provider"] = (helper, database, entry, master, login)
             helper, database, entry, master, login = autofill["provider"]
@@ -160,6 +173,10 @@ def login_cookie():
             Gtk.main_quit()
         except Exception:
             autofill["stopped"] = True
+            if quiet:
+                session["error"] = "Automatic sign-in could not continue. Retry tifrvpn -c to see the sign-in window."
+                Gtk.main_quit()
+                return
             print("tifr VPN: automatic sign-in could not continue; check the sign-in window.", file=sys.stderr)
         finally:
             autofill["busy"] = False
@@ -219,6 +236,15 @@ def login_cookie():
                     manager.get_all_cookies(None, remember_browser)
                 return
 
+    def confirmation_ready(source, result):
+        try:
+            required = source.evaluate_javascript_finish(result).to_boolean()
+        except Exception:
+            return
+        if required:
+            session["error"] = "TIFR requires confirmation to replace another session. Retry tifrvpn -c and review the warning."
+            Gtk.main_quit()
+
     def check_cookies(*_args):
         page = urlsplit(view.get_uri() or "")
         # A DSID may exist before the concurrent-session confirmation finishes;
@@ -226,6 +252,8 @@ def login_cookie():
         if (not view.is_loading() and page.hostname == HOST
                 and not session["busy"] and not session["cookie"]):
             session["busy"] = True
+            if quiet:
+                view.evaluate_javascript(CONFIRMATION_SCRIPT, -1, None, None, None, confirmation_ready)
             manager.get_cookies("https://" + HOST + "/dana/home/index.cgi", None, cookies_ready)
 
     def tls_error(_view, _uri, _certificate, _errors):
@@ -335,13 +363,54 @@ def activate(uuid, cookie):
         os.close(fd)
 
 
-def authenticate():
-    # Isolate WebKit from the tunnel controller, including its native shutdown.
-    result = subprocess.run(
-        [sys.executable, os.path.abspath(__file__), "--sso-window"],
-        stdout=subprocess.PIPE, text=True,
+def background_browser(command):
+    """Run a disposable virtual display and clean up its entire process group."""
+    environment = dict(os.environ, GDK_BACKEND="x11")
+    environment.pop("WAYLAND_DISPLAY", None)
+    process = subprocess.Popen(
+        command, stdout=subprocess.PIPE, text=True, env=environment,
+        start_new_session=True,
     )
+    try:
+        output, _ = process.communicate(timeout=BACKGROUND_TIMEOUT)
+    except (subprocess.TimeoutExpired, KeyboardInterrupt) as error:
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        try:
+            process.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            process.communicate()
+        if isinstance(error, KeyboardInterrupt):
+            raise
+        raise RuntimeError("Background sign-in timed out. Retry tifrvpn -c to see whether TIFR needs input.") from None
+    return subprocess.CompletedProcess(command, process.returncode, output)
+
+
+def authenticate(*, quiet=False):
+    # Isolate WebKit from the tunnel controller, including its native shutdown.
+    command = [sys.executable, os.path.abspath(__file__), "--sso-window"]
+    if quiet:
+        missing = [name for name in ("xvfb-run", "Xvfb", "xauth") if not shutil.which(name)]
+        if missing:
+            raise RuntimeError("Background sign-in requires: " + ", ".join(missing) + ". Install Xvfb and xauth, or retry without --quiet.")
+        # Unlock on the real desktop before changing DISPLAY. The child only
+        # uses cached GPG access, so it can never hide a pinentry prompt.
+        helper = runpy.run_path(os.path.join(os.path.dirname(os.path.abspath(__file__)), "tifr-otp.py"))
+        _, password_file, _ = helper["configuration"]()
+        helper["decrypt_password"](password_file)
+        print("tifr VPN: signing in in the background (120-second limit)", file=sys.stderr, flush=True)
+        result = background_browser(["xvfb-run", "-a"] + command + ["--quiet"])
+    else:
+        result = subprocess.run(command, stdout=subprocess.PIPE, text=True)
     if result.returncode:
+        if quiet:
+            raise RuntimeError("Background sign-in did not complete. Retry tifrvpn -c to see the sign-in window.")
         raise RuntimeError("SSO sign-in did not complete; no tunnel was started.")
     cookie = result.stdout.strip()
     if not cookie.startswith("DSID=") or any(char in cookie for char in "\r\n\0"):
@@ -349,10 +418,10 @@ def authenticate():
     return cookie
 
 
-def sso_window_process():
+def sso_window_process(*, quiet=False):
     code = 1
     try:
-        cookie = login_cookie()
+        cookie = login_cookie(quiet=quiet)
         sys.stdout.write(cookie)
         sys.stdout.flush()
         code = 0
@@ -380,10 +449,11 @@ def main():
             return 1
         print("tifr VPN: saved sign-in state cleared; an active tunnel is unaffected.")
         return 0
-    if len(sys.argv) != 2:
-        print("Usage: tifr-vpn-auth.py NETWORKMANAGER_PROFILE_UUID", file=sys.stderr)
-        return 2
-    uuid = sys.argv[1]
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("uuid", metavar="NETWORKMANAGER_PROFILE_UUID")
+    parser.add_argument("--quiet", action="store_true", help="hide the SSO browser using Xvfb")
+    args = parser.parse_args()
+    uuid = args.uuid
     service = subprocess.check_output(
         ["nmcli", "-g", "vpn.service-type", "connection", "show", "uuid", uuid], text=True,
     ).strip()
@@ -401,14 +471,14 @@ def main():
     if cookie:
         saved_login("session", forget=True)
         print("tifr VPN: saved session expired; TIFR requires sign-in again.", flush=True)
-    cookie = authenticate()
+    cookie = authenticate(quiet=args.quiet)
     saved_login("session", cookie)
     return activate(uuid, cookie)
 
 
 if __name__ == "__main__":
-    if sys.argv[1:] == ["--sso-window"]:
-        sso_window_process()
+    if sys.argv[1:] in (["--sso-window"], ["--sso-window", "--quiet"]):
+        sso_window_process(quiet="--quiet" in sys.argv[1:])
     try:
         sys.exit(main())
     except KeyboardInterrupt:
