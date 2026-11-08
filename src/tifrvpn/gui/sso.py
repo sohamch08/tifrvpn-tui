@@ -5,11 +5,18 @@ import sys
 import time
 from urllib.parse import urlsplit
 
+import gi
+
 from .. import credentials
 from ..auth import valid_session
 from ..config import HOST, URL, load_config
 from ..errors import AuthenticationError
 from ..keyring import load_browser_state, save_browser_state
+
+gi.require_version("Gtk", "3.0")
+gi.require_version("WebKit2", "4.1")
+gi.require_version("Soup", "3.0")
+from gi.repository import GLib, Gtk, Soup, WebKit2  # noqa: E402 - Select namespace versions first.
 
 CONFIRMATION_SCRIPT = """(() => {
   if (location.origin !== 'https://sslvpn.tifr.res.in') return false;
@@ -54,13 +61,6 @@ def signin_script(values=None):
 
 
 def login_cookie(*, quiet=False, config=None):
-    import gi
-
-    gi.require_version("Gtk", "3.0")
-    gi.require_version("WebKit2", "4.1")
-    gi.require_version("Soup", "3.0")
-    from gi.repository import GLib, Gtk, Soup, WebKit2
-
     if not Gtk.init_check()[0]:
         raise AuthenticationError("A graphical session is required for TIFR SSO login.")
     context = WebKit2.WebContext.new_ephemeral()

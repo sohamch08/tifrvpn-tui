@@ -2,9 +2,7 @@
 
 import contextlib
 import io
-import sys
 import unittest
-from types import ModuleType
 from unittest.mock import Mock, patch
 
 from tifrvpn import keyring
@@ -15,11 +13,7 @@ from tifrvpn.errors import AuthenticationError
 class KeyringTests(unittest.TestCase):
     def setUp(self):
         self.secret = Mock()
-        gi = ModuleType("gi")
-        gi.require_version = Mock()
-        repository = ModuleType("gi.repository")
-        repository.Secret = self.secret
-        patcher = patch.dict(sys.modules, {"gi": gi, "gi.repository": repository})
+        patcher = patch.object(keyring, "Secret", self.secret)
         patcher.start()
         self.addCleanup(patcher.stop)
 

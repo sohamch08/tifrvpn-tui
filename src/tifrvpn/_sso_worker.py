@@ -5,11 +5,11 @@ import json
 import os
 import sys
 
+from .config import Config
+from .gui.sso import login_cookie
+
 
 def sso_window_process(*, quiet=False):
-    from .config import Config
-    from .gui.sso import login_cookie
-
     raw = os.environ.get("_TIFR_WORKER_CONFIG")
     config = Config(**json.loads(raw)) if raw is not None else None
     _run(login_cookie, quiet=quiet, config=config)

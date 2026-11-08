@@ -1,11 +1,11 @@
-"""Interactive credential setup; Qt is loaded only when requested."""
+"""Interactive credential setup; dialogs open only when setup is called."""
+
+from PySide6.QtWidgets import QApplication, QInputDialog, QLineEdit, QMessageBox
 
 from ..credentials import read_login, recipient_key, save_password
 
 
 def setup(password_file, database, entry, recipient, *, on_progress=None):
-    from PySide6.QtWidgets import QApplication, QInputDialog, QLineEdit, QMessageBox
-
     _app = QApplication.instance() or QApplication(
         []
     )  # Keep Qt alive through all dialogs.

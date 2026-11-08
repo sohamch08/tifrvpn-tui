@@ -1,12 +1,16 @@
 """NetworkManager/OpenConnect backend, using nmcli without shell evaluation."""
 
 import base64
+import getpass
 import hashlib
 import os
 import shutil
 import socket
 import ssl
 import subprocess
+
+from cryptography import x509
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from .config import HOST, URL
 from .errors import NetworkManagerError, ProfileNotFound
@@ -83,8 +87,6 @@ def setup_profile(*, on_progress=None):
             raise NetworkManagerError(
                 "ambiguous tifr-ivanti profile; resolve duplicate names before setup."
             ) from None
-        import getpass
-
         _run(
             [
                 "connection",
@@ -162,9 +164,6 @@ def validate_profile(uuid):
 
 
 def activate(uuid, cookie, *, on_progress=None):
-    from cryptography import x509
-    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
-
     # Verify the gateway with the system trust store before pinning this session.
     context = ssl.create_default_context()
     with (
