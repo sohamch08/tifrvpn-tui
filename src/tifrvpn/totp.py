@@ -5,13 +5,14 @@ import hashlib
 import hmac
 import struct
 import time
+from collections.abc import Iterator
 from urllib.parse import parse_qs, urlsplit
 
 
-def _fields(data):
+def _fields(data: bytes) -> Iterator[tuple[int, int | bytes]]:
     offset = 0
 
-    def varint():
+    def varint() -> int:
         nonlocal offset
         value = 0
         for shift in range(0, 70, 7):
@@ -24,6 +25,7 @@ def _fields(data):
                 return value
         raise ValueError("Invalid export QR.")
 
+    value: int | bytes
     while offset < len(data):
         tag = varint()
         number, wire = tag >> 3, tag & 7
@@ -42,7 +44,7 @@ def _fields(data):
         yield number, value
 
 
-def decode_export(text):
+def decode_export(text: str):
     uri = urlsplit(text)
     if uri.scheme != "otpauth-migration" or uri.netloc != "offline":
         raise ValueError(
@@ -61,28 +63,41 @@ def decode_export(text):
         raise ValueError("Could not decode this export QR.") from None
     accounts = [value for number, value in payload if number == 1]
     if len(accounts) != 1 or any(
-        number == 3 and value > 1 for number, value in payload
+        number == 3 and (not isinstance(value, int) or value > 1)
+        for number, value in payload
     ):
         raise ValueError("Export only the TIFR entry, then scan the new QR.")
-    account = dict(_fields(accounts[0]))
-    if not isinstance(account.get(1), bytes) or not account[1]:
+    account_data = accounts[0]
+    if not isinstance(account_data, bytes):
+        raise ValueError("Invalid export QR.")  # noqa: TRY004 - Malformed QR data.
+    account = dict(_fields(account_data))
+    secret = account.get(1)
+    if not isinstance(secret, bytes) or not secret:
         raise ValueError("The export contains no setup key.")
+    name = account.get(2, b"")
+    issuer = account.get(3, b"")
+    if not isinstance(name, bytes) or not isinstance(issuer, bytes):
+        raise ValueError("Invalid export QR.")  # noqa: TRY004 - Malformed QR data.
     algorithms = {1: "SHA1", 2: "SHA256", 3: "SHA512"}
     digits = {1: 6, 2: 8}
+    algorithm = account.get(4)
+    digit_format = account.get(5)
     if (
         account.get(6) != 2
-        or account.get(4) not in algorithms
-        or account.get(5) not in digits
+        or not isinstance(algorithm, int)
+        or algorithm not in algorithms
+        or not isinstance(digit_format, int)
+        or digit_format not in digits
     ):
         raise ValueError(
             "This export is not a supported time-based authenticator entry."
         )
     return {
-        "secret": base64.b32encode(account[1]).decode().rstrip("="),
-        "name": account.get(2, b"").decode("utf-8"),
-        "issuer": account.get(3, b"").decode("utf-8"),
-        "algorithm": algorithms[account[4]],
-        "digits": digits[account[5]],
+        "secret": base64.b32encode(secret).decode().rstrip("="),
+        "name": name.decode("utf-8"),
+        "issuer": issuer.decode("utf-8"),
+        "algorithm": algorithms[algorithm],
+        "digits": digits[digit_format],
         "period": 30,
     }
 
