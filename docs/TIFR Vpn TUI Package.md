@@ -4,36 +4,38 @@ number headings: auto, first-level 1, max 5, _.1.1
 
 # TIFR VPN Package Guide
 
-Current implementation guide for the recorded `tifrvpn/package` snapshot. For the original scripts and shared foundations, see [[TIFR Vpn TUI|TIFR Vpn TUI]]. Section numbers are retained from the combined guide.
+Current implementation guide for `tifrvpn/package` at committed revision `589be0d`, inspected on 8 November 2026. For the original scripts and shared foundations, see [[TIFR Vpn TUI|TIFR Vpn TUI]]. Start with [[#15 Understanding the November fixes — a beginner's walkthrough|the beginner walkthrough]] for the recent changes, then use the full source appendix as a reference.
 
-- Source snapshot: 7 November 2026.
+- Source snapshot: 8 November 2026.
 - Repository: `/home/soham/projects/tifrvpn-tui`.
-- Package revision: `075f9cd3cfb9691f85684d3345f9f0088dbaac61`.
+- Package revision: `589be0d86a538b1a28f08d384474a156628668c4` (`589be0d`).
+- Checkout state at inspection: clean; the dependency, export validation, import/QR fixes and README changes are committed.
 - Main baseline: `41b2346c8af8da7e1f224bdf9de10f50a946a261`.
-- Recorded validation: 33 source files, 3,560 source lines, 50 offline tests passed.
-- Split into this note: 8 November 2026.
+- Documented snapshot: 34 files, 3,692 lines across those files; 53 offline test methods pass.
+- Verified local runtime: uv-managed Python 3.13.18, PyGObject 3.58.1 inside an isolated `.venv` with system-site-packages disabled.
+- This Research note was refreshed on 8 November 2026; it is separate from the repository's tracked `docs/TIFR Vpn TUI Package.md` copy.
 
 ## 1 Package branch — start here
 
 
 ### 1.1 Current implementation: `tifrvpn/package`
 
-**Recorded revision:** `075f9cd3cfb9` · **main baseline:** `41b2346c8af8` · **33 current files / 3,560 source lines** · **50 offline tests pass**.
+**Recorded revision:** `589be0d86a53` · **main baseline:** `41b2346c8af8` · **34 documented files / 3,692 lines** · **53 offline tests pass**.
 
 This branch reorganizes the working VPN scripts into an importable Python library and three package-generated commands. The original main tutorial is retained in [[TIFR Vpn TUI|TIFR Vpn TUI]] for comparison. Its `install.sh`, Zsh launcher and root-script locations describe the older architecture. Use this package guide for the recorded current branch.
 
-During inspection, pending cleanup changes were committed as `3275bad` and its installation documentation as `075f9cd`. The snapshot below records the resulting **clean committed checkout**. It does not describe the brief earlier state in which those changes were still uncommitted.
+The early package cleanup was committed as `3275bad`, followed by its installation documentation in `075f9cd`. The configuration cast is now committed as `507b4b3`. The additional PyGObject, export validation, module-import/QR and README changes are committed as `bf6fa28`, `41d6410`, `6d5aa1a` and `589be0d`. The embedded source reflects that final clean checkout; it is not a collection of uncommitted suggestions.
 
-**Package navigation:** [[#11 Package branch — history and terminology|History]] · [[#12 Package branch — migration map|What moved and why]] · [[#13 Package branch — file map|Where code lives]] · [[#14 Package branch — setup and installation|Install]] · [[#15 Package branch — daily use|Daily use]] · [[#16 Package branch — workflows|Workflows]] · [[#17 Package branch — Python API|Python API]] · [[#18 Package branch — new concepts|New concepts]] · [[#19 Package branch — tests and verification|Tests]] · [[#22 Package branch — every current file|Every code line]] · [[#23 Package branch — transitional launchers explained|Removed wrappers]] · [[#20 Package branch — troubleshooting and maintenance|Troubleshooting]] · [[#21 Package branch — references|References]]
+**Package navigation:** [[#15 Understanding the November fixes — a beginner's walkthrough|New fixes explained]] · [[#2 Package branch — history and terminology|History]] · [[#3 Package branch — migration map|What moved and why]] · [[#4 Package branch — file map|Where code lives]] · [[#5 Package branch — setup and installation|Install]] · [[#6 Package branch — daily use|Daily use]] · [[#7 Package branch — workflows|Workflows]] · [[#8 Package branch — Python API|Python API]] · [[#9 Package branch — new concepts|New concepts]] · [[#10 Package branch — tests and verification|Tests]] · [[#13 Package branch — every current file|Every code line]] · [[#14 Package branch — transitional launchers explained|Removed wrappers]] · [[#11 Package branch — troubleshooting and maintenance|Troubleshooting]] · [[#12 Package branch — references|References]]
 
 
 ### 1.2 Your old installed commands are still a separate version
 
-All five files under `~/bin/tifr` were compared with `main` and still match its old scripts byte for byte. `~/bin` resolves to `~/projects/dotfiles/bin`. Switching the repository to `tifrvpn/package` did not overwrite those files, move your vault, change your GPG key or replace your installed commands.
+At the original 7 November inspection, all five files under `~/bin/tifr` matched `main`'s old scripts byte for byte. That is a recorded historical comparison, not a claim that this documentation refresh recopied or rechecked those files. `~/bin` resolves to `~/projects/dotfiles/bin`. Switching the repository to `tifrvpn/package` did not overwrite those files, move your vault, change your GPG key or replace your installed commands.
 
 The package code lives in this checkout's `src/tifrvpn/`. An installation into a chosen Python environment generates commands in that environment's `bin/`. Which implementation runs depends on shell command resolution and that executable's Python environment—not merely on the branch shown in Git.
 
-The documentation check used a **separate temporary validation environment**, leaving your existing `.venv` and `~/bin/tifr` installation alone. In the inspection tool's shell, no bare `tifrvpn` command was found before that isolated installation; your interactive shell can have different PATH entries, aliases or functions.
+The original documentation check used a separate temporary environment. The final setup subsequently installed PyGObject directly into the project's existing uv-managed Python 3.13 `.venv`; the current 53-test run used that environment. Neither that package installation nor this guide copies over the separate `~/bin/tifr` scripts. Shell aliases/functions and PATH can still select a different executable; section 5 shows how to identify the one in use.
 
 ## 2 Package branch — history and terminology
 
@@ -51,7 +53,13 @@ The slash in `tifrvpn/package` is part of a branch name. It does not mean Git au
 | `41b2346` | Main baseline: independent root scripts and copy installer; [[TIFR Vpn TUI|The original guide]] covers this version. |
 | `ade9780` | First refactor: create `src/tifrvpn`, public API, component modules and tests; temporarily retain Python compatibility wrappers and a copy installer. |
 | `3275bad` | Use package entry points exclusively: delete the root wrappers/installer and the compatibility-only `auth_main`; remove manual worker PYTHONPATH injection; add installed-package tests. |
-| `075f9cd` | Update README around normal/editable Python-package installation and development. This is the documented current head. |
+| `075f9cd` | Earlier package installation/editable-development documentation. |
+| `b61531d` | Add the earlier ChatGPT-derived guides under the repository's `docs/` directory. |
+| `507b4b3` | Record the validated configuration dictionary type so Path/entry lookups type-check correctly. |
+| `bf6fa28` | Declare and lock PyGObject so ordinary uv installs provide `import gi`. |
+| `41d6410` | Validate decoded export field types and add three decoder test methods. |
+| `6d5aa1a` | Move imports to module scope, update dependency mocks and repair the QR/Qt typing paths. |
+| `589be0d` | Document the ordinary uv installation and native GI prerequisites; current recorded head. |
 
 Reasons stated in this guide describe effects visible in code, tests and commit changes. They do not assume undocumented personal motives of the author. The intermediate `ade9780` source is included later to explain how migration happened; it is not the current installation route.
 
@@ -118,7 +126,7 @@ Installed tifr-import-totp executable
 | `tifr-vpn-auth.py`: activation TLS/key pin/memfd | `networkmanager.activate` | Keep tunnel activation with the rest of the NetworkManager backend. |
 | `tifr-vpn-auth.py`: saved-login read/write/delete | `keyring.py` | Give session and browser state clearly named wrappers and preserve the existing cache namespace. |
 | `tifr-vpn-auth.py`: portal validation and worker/Xvfb supervision | `auth.py` | Separate non-GUI authentication control from the web window. |
-| `tifr-vpn-auth.py`: JavaScript, GTK/WebKit window and cookie callbacks | `gui/sso.py` | Keep optional GUI logic contained and load it only for actual sign-in. |
+| `tifr-vpn-auth.py`: JavaScript, GTK/WebKit window and cookie callbacks | `gui/sso.py` | Keep browser GUI logic in the isolated worker; its toolkit imports now load with that module, while the window opens only during actual sign-in. |
 | `tifr-vpn-auth.py`: internal `--sso-window` mode | `_sso_worker.py` | Make isolated process execution a dedicated importable module. |
 | `tifr-vpn-auth.py`: cached/fresh session followed by activation | `vpn.connect` | Make the complete operation available to both CLI and other Python callers. |
 | `tifr-otp.py`: configuration tuple | `config.Config` + `load_config` | Return named settings fields and permit explicit settings objects. |
@@ -155,11 +163,11 @@ No vault, master password, GPG key or authenticator enrollment was migrated by m
 - **Structured data:** state/device/change results travel as `VPNStatus`, while settings travel as `Config`.
 - **Catchable errors:** expected failures are `VPNError` subclasses carrying `returncode`, rather than library code choosing to terminate the application.
 - **Presentation boundary:** terminal colors, stdout/stderr choices and notifications live in `cli.py`. Callers can omit progress or supply their own callback.
-- **Import safety:** optional toolkits are loaded inside real operations; test discovery can import every module without credentials, subprocess startup, configuration text reads or sockets.
+- **Import placement and behavior:** imports now appear at module scope. The relevant dependencies must be installed before importing those modules. Application imports still do not read credentials/configuration, launch subprocesses, open windows or create VPN sockets; the revised import test checks that boundary using fake dependency interfaces.
 - **Worker startup:** `python -m tifrvpn._sso_worker` replaces invoking the old root script with `--sso-window`. It must be importable in that interpreter's environment.
 - **Worker diagnostics:** both child streams are captured. The cookie stays on stdout; stderr lines are forwarded after the child returns. This differs from main's live inherited stderr.
 - **Installation checks:** tests now require genuine installed entry points and isolated imports from another directory, preventing hidden dependence on the source cwd/PYTHONPATH.
-- **Dependencies:** separately distributed `argparse` is removed; Python already supplies it. NumPy/Qt/QR packages remain declared dependencies even though their imports are lazy; no optional extras are defined.
+- **Dependencies:** separately distributed `argparse` is removed because Python supplies it. PyGObject is now declared alongside cryptography, NumPy, PySide6 and ZXing. Their imports are grouped at module scope; no optional dependency extras are defined.
 
 ## 4 Package branch — file map
 
@@ -167,39 +175,40 @@ The package's main public entry is `src/tifrvpn/__init__.py`. Begin with `vpn.py
 
 | Current file | Lines | Purpose |
 | --- | ---: | --- |
-| [[#22.1 Package source — src/tifrvpn/__init__.py\|src/tifrvpn/__init__.py]] | 20 | The public front door of the importable library |
-| [[#22.2 Package source — src/tifrvpn/__main__.py\|src/tifrvpn/__main__.py]] | 6 | The module-execution adapter |
-| [[#22.3 Package source — src/tifrvpn/vpn.py\|src/tifrvpn/vpn.py]] | 143 | The public orchestration layer: it chooses the sequence of backend operations and returns structured results |
-| [[#22.4 Package source — src/tifrvpn/cli.py\|src/tifrvpn/cli.py]] | 242 | Terminal presentation and command dispatch now live in Python |
-| [[#22.5 Package source — src/tifrvpn/config.py\|src/tifrvpn/config.py]] | 81 | Settings are now an immutable Config object plus a loader, extracted from main’s tifr-otp.py configuration() |
-| [[#22.6 Package source — src/tifrvpn/errors.py\|src/tifrvpn/errors.py]] | 31 | A small error vocabulary shared by the library and command adapters |
-| [[#22.7 Package source — src/tifrvpn/credentials.py\|src/tifrvpn/credentials.py]] | 171 | The headless credential-access layer extracted from main’s tifr-otp.py |
-| [[#22.8 Package source — src/tifrvpn/auth.py\|src/tifrvpn/auth.py]] | 140 | The non-GUI authentication supervisor, split out of main’s large authentication script |
-| [[#22.9 Package source — src/tifrvpn/_sso_worker.py\|src/tifrvpn/_sso_worker.py]] | 52 | The private worker entry point replaces main’s --sso-window self-invocation mode |
-| [[#22.10 Package source — src/tifrvpn/keyring.py\|src/tifrvpn/keyring.py]] | 70 | A named adapter around desktop Secret Service replaces the multifunction saved_login() inside main’s authentication script |
-| [[#22.11 Package source — src/tifrvpn/networkmanager.py\|src/tifrvpn/networkmanager.py]] | 218 | The NetworkManager/OpenConnect backend replaces main’s Zsh nmcli helpers and receives the old Python activate() TLS/descriptor handoff |
-| [[#22.12 Package source — src/tifrvpn/totp.py\|src/tifrvpn/totp.py]] | 99 | Pure-data QR migration parsing and TOTP calculation moved out of main’s combined QR/Qt script |
-| [[#22.13 Package source — src/tifrvpn/gui/__init__.py\|src/tifrvpn/gui/__init__.py]] | 1 | Marks the optional GUI subpackage |
-| [[#22.14 Package source — src/tifrvpn/gui/credential_setup.py\|src/tifrvpn/gui/credential_setup.py]] | 51 | Qt password-collection dialogs were split from the non-GUI GPG/ciphertext writing operations |
-| [[#22.15 Package source — src/tifrvpn/gui/sso.py\|src/tifrvpn/gui/sso.py]] | 336 | The GTK/WebKit window and restricted autofill logic moved out of the old all-in-one authentication script |
-| [[#22.16 Package source — src/tifrvpn/gui/qr_import.py\|src/tifrvpn/gui/qr_import.py]] | 228 | The Qt camera/image UI moved out of the old combined QR script |
-| [[#22.17 Package source — tests/test_imports.py\|tests/test_imports.py]] | 46 | This test launches a clean interpreter and deliberately makes external work or optional GUI/crypto imports fail |
-| [[#22.18 Package source — tests/test_vpn.py\|tests/test_vpn.py]] | 132 | Offline regression checks for vpn |
-| [[#22.19 Package source — tests/test_cli.py\|tests/test_cli.py]] | 134 | Offline regression checks for cli |
-| [[#22.20 Package source — tests/test_config.py\|tests/test_config.py]] | 112 | Offline regression checks for config |
-| [[#22.21 Package source — tests/test_auth.py\|tests/test_auth.py]] | 93 | Offline regression checks for auth |
-| [[#22.22 Package source — tests/test_keyring.py\|tests/test_keyring.py]] | 92 | Offline regression checks for keyring |
-| [[#22.23 Package source — tests/test_networkmanager.py\|tests/test_networkmanager.py]] | 134 | Offline regression checks for networkmanager |
-| [[#22.24 Package source — tests/test_quiet.py\|tests/test_quiet.py]] | 130 | Offline regression checks for quiet |
-| [[#22.25 Package source — tests/test_packaging.py\|tests/test_packaging.py]] | 74 | Installation tests replace the old copy-installer checks |
-| [[#22.26 Package source — pyproject.toml\|pyproject.toml]] | 27 | The package distribution is still named tifrvpn-tui, but the Python import name is tifrvpn and the three installed commands are tifrvpn, tifr-otp and tifr-import-totp |
-| [[#22.27 Package source — config.example.json\|config.example.json]] | 5 | The previously missing example config is now present on the package branch |
-| [[#22.28 Package source — README.md\|README.md]] | 286 | The branch’s human-facing instructions now describe installing an actual Python distribution and using its library |
-| [[#22.29 Package source — uv.lock\|uv.lock]] | 345 | The redundant separately distributed argparse package and its references disappear; other locked dependencies remain |
-| [[#22.30 Package source — .envrc\|.envrc]] | 1 | The developer-environment instruction remains unchanged; it is independent of the old script installer |
-| [[#22.31 Package source — .python-version\|.python-version]] | 1 | The preferred development Python series remains unchanged |
-| [[#22.32 Package source — .gitignore\|.gitignore]] | 38 | The existing ignore patterns remain unchanged in this branch snapshot |
-| [[#22.33 Package source — LICENSE\|LICENSE]] | 21 | The license text remains unchanged, including its unfilled copyright placeholders |
+| [[#13.1 Package source — src/tifrvpn/__init__.py\|src/tifrvpn/__init__.py]] | 20 | The public front door of the importable library |
+| [[#13.2 Package source — src/tifrvpn/__main__.py\|src/tifrvpn/__main__.py]] | 6 | The module-execution adapter |
+| [[#13.3 Package source — src/tifrvpn/vpn.py\|src/tifrvpn/vpn.py]] | 143 | The public orchestration layer: it chooses the sequence of backend operations and returns structured results |
+| [[#13.4 Package source — src/tifrvpn/cli.py\|src/tifrvpn/cli.py]] | 238 | Terminal presentation and command dispatch now live in Python |
+| [[#13.5 Package source — src/tifrvpn/config.py\|src/tifrvpn/config.py]] | 83 | Settings are now an immutable Config object plus a loader, extracted from main’s tifr-otp.py configuration() |
+| [[#13.6 Package source — src/tifrvpn/errors.py\|src/tifrvpn/errors.py]] | 31 | A small error vocabulary shared by the library and command adapters |
+| [[#13.7 Package source — src/tifrvpn/credentials.py\|src/tifrvpn/credentials.py]] | 171 | The headless credential-access layer extracted from main’s tifr-otp.py |
+| [[#13.8 Package source — src/tifrvpn/auth.py\|src/tifrvpn/auth.py]] | 140 | The non-GUI authentication supervisor, split out of main’s large authentication script |
+| [[#13.9 Package source — src/tifrvpn/_sso_worker.py\|src/tifrvpn/_sso_worker.py]] | 52 | The private worker entry point replaces main’s --sso-window self-invocation mode |
+| [[#13.10 Package source — src/tifrvpn/keyring.py\|src/tifrvpn/keyring.py]] | 70 | A named adapter around desktop Secret Service replaces the multifunction saved_login() inside main’s authentication script |
+| [[#13.11 Package source — src/tifrvpn/networkmanager.py\|src/tifrvpn/networkmanager.py]] | 217 | The NetworkManager/OpenConnect backend replaces main’s Zsh nmcli helpers and receives the old Python activate() TLS/descriptor handoff |
+| [[#13.12 Package source — src/tifrvpn/totp.py\|src/tifrvpn/totp.py]] | 114 | Pure-data QR migration parsing and TOTP calculation moved out of main’s combined QR/Qt script |
+| [[#13.13 Package source — src/tifrvpn/gui/__init__.py\|src/tifrvpn/gui/__init__.py]] | 1 | Marks the optional GUI subpackage |
+| [[#13.14 Package source — src/tifrvpn/gui/credential_setup.py\|src/tifrvpn/gui/credential_setup.py]] | 51 | Qt password-collection dialogs were split from the non-GUI GPG/ciphertext writing operations |
+| [[#13.15 Package source — src/tifrvpn/gui/sso.py\|src/tifrvpn/gui/sso.py]] | 336 | The GTK/WebKit window and restricted autofill logic moved out of the old all-in-one authentication script |
+| [[#13.16 Package source — src/tifrvpn/gui/qr_import.py\|src/tifrvpn/gui/qr_import.py]] | 233 | The Qt camera/image UI moved out of the old combined QR script |
+| [[#13.17 Package source — tests/test_imports.py\|tests/test_imports.py]] | 54 | Import tests supply fake dependency interfaces and reject application external work during module loading |
+| [[#13.18 Package source — tests/test_vpn.py\|tests/test_vpn.py]] | 132 | Offline regression checks for vpn |
+| [[#13.19 Package source — tests/test_cli.py\|tests/test_cli.py]] | 133 | Offline regression checks for cli |
+| [[#13.20 Package source — tests/test_config.py\|tests/test_config.py]] | 112 | Offline regression checks for config |
+| [[#13.21 Package source — tests/test_auth.py\|tests/test_auth.py]] | 93 | Offline regression checks for auth |
+| [[#13.22 Package source — tests/test_keyring.py\|tests/test_keyring.py]] | 86 | Offline regression checks for keyring |
+| [[#13.23 Package source — tests/test_networkmanager.py\|tests/test_networkmanager.py]] | 134 | Offline regression checks for networkmanager |
+| [[#13.24 Package source — tests/test_quiet.py\|tests/test_quiet.py]] | 130 | Offline regression checks for quiet |
+| [[#13.25 Package source — tests/test_packaging.py\|tests/test_packaging.py]] | 74 | Installation tests replace the old copy-installer checks |
+| [[#13.26 Package source — pyproject.toml\|pyproject.toml]] | 28 | The package distribution is still named tifrvpn-tui, but the Python import name is tifrvpn and the three installed commands are tifrvpn, tifr-otp and tifr-import-totp |
+| [[#13.27 Package source — config.example.json\|config.example.json]] | 5 | The previously missing example config is now present on the package branch |
+| [[#13.28 Package source — README.md\|README.md]] | 305 | The branch’s human-facing instructions now describe installing an actual Python distribution and using its library |
+| [[#13.29 Package source — uv.lock\|uv.lock]] | 376 | Generated locked dependency selection, now including PyGObject and Pycairo |
+| [[#13.30 Package source — .envrc\|.envrc]] | 1 | The developer-environment instruction remains unchanged; it is independent of the old script installer |
+| [[#13.31 Package source — .python-version\|.python-version]] | 1 | The preferred development Python series remains unchanged |
+| [[#13.32 Package source — .gitignore\|.gitignore]] | 38 | The existing ignore patterns remain unchanged in this branch snapshot |
+| [[#13.33 Package source — LICENSE\|LICENSE]] | 21 | The license text remains unchanged, including its unfilled copyright placeholders |
+| [[#13.34 Package source — tests/test_totp.py\|tests/test_totp.py]] | 63 | Three decoder tests covering valid public-key fixtures and nine malformed/unsupported payload cases |
 
 
 ### 4.1 Where source, installed code, command wrappers and personal data live
@@ -227,39 +236,37 @@ A source file is not automatically an installed command; an installed distributi
 ## 5 Package branch — setup and installation
 
 
-### 5.1 Existing machine state and choosing an environment
+### 5.1 The final environment: ordinary uv-managed Python 3.13
 
-Your existing checkout `.venv` was inspected, not replaced: it uses a uv-managed Python 3.13 and records `include-system-site-packages = false`. The system interpreter observed was `/usr/bin/python3`, Python 3.14.10. This means the old `.venv` should not simply be assumed to satisfy the README's recommended native GI visibility.
+The final verified checkout uses Python 3.13.18 in `.venv`. `include-system-site-packages = false` is intentional. PyGObject 3.58.1 is installed inside that environment and provides `import gi`; Pycairo 1.29.2 was built/installed as its dependency. Python 3.14 is not a package requirement and is not needed by this route.
 
-Native PyGObject/GI bindings can be tied to the system interpreter ABI. Exposing system site-packages is useful only with a compatible interpreter; a separately downloaded Python is not automatically compatible with your distribution's bindings. The instructions below show a distinct environment outside the checkout, avoiding the need to overwrite your current `.venv`. They are examples for you to use, not changes made during this documentation task.
+Earlier instructions suggested reusing Fedora's preinstalled Python 3.14 GI bindings through a compatible system interpreter and `--system-site-packages`. That is an alternative, not the final recommendation here. The successful final fix was `uv add PyGObject`, building the bindings for the project's own Python 3.13. This dependency is now already recorded in the repository, so a fresh clone uses `uv sync --locked`.
 
-Install the README's Linux tools/services and bindings separately: NetworkManager/OpenConnect plugin, OpenConnect, KeePassXC CLI or supported Flatpak, GPG/pinentry, GTK3/WebKitGTK4.1/libsoup3/libsecret GI support, and Xvfb/xauth for fresh quiet sign-in. Installing the Python distribution alone does not create those OS services or your TIFR account.
+There are two layers to install: Python distributions inside `.venv`, and native Linux libraries/programs outside it. uv manages the first layer. Your OS package manager provides the second. Section 15 explains the name and version differences with examples.
 
+### 5.2 Install on a fresh machine and explain each step
 
-### 5.2 Choose one normal-user installation route
-
-**Route A — Python's venv and pip, with editable source for development:**
-
-```sh
-cd ~/projects/tifrvpn-tui
-/usr/bin/python3 -m venv --system-site-packages "$HOME/.local/share/venvs/tifrvpn-package"
-source "$HOME/.local/share/venvs/tifrvpn-package/bin/activate"
-python -m pip install -e .
-```
-
-The explicit system interpreter creates the environment. `--system-site-packages` permits access to compatible system Python bindings. `source` changes the current shell's command lookup. `python -m pip` runs pip belonging to that selected interpreter. `-e` means editable; `.` is the current project directory. Installation may need dependency downloads unless already available locally. Some distributions require their venv/pip support package first.
-
-**Route B — uv targeting that interpreter/environment explicitly:**
+Install NetworkManager/OpenConnect support, KeePassXC CLI, GnuPG/pinentry and desktop keyring support as described in README. For GI runtime/build prerequisites on Fedora, the current README specifies:
 
 ```sh
-cd ~/projects/tifrvpn-tui
-uv venv --python /usr/bin/python3 --system-site-packages "$HOME/.local/share/venvs/tifrvpn-package"
-uv pip install --python "$HOME/.local/share/venvs/tifrvpn-package/bin/python" -e .
-source "$HOME/.local/share/venvs/tifrvpn-package/bin/activate"
+sudo dnf install gcc pkgconf-pkg-config gobject-introspection-devel cairo-gobject-devel gtk3 webkit2gtk4.1 libsoup3 libsecret
 ```
 
-Choose one route; do not run environment creation every day. The README uses `.venv` as its example location; this tutorial uses an explicit separate path because a different `.venv` already exists in your checkout. For a **normal noneditable installation**, replace `-e .` with `.` and reinstall after source updates. An installation registers the package and generates its commands; it does not require `install.sh`, which no longer exists on this branch.
+This covers GI support, not all the VPN/credential programs. Building Python bindings needs a compiler, native development files and matching interpreter headers. uv-managed CPython supplies its own Python headers; system Python may require `python3-devel`. Other distributions use different package names and must meet the locked release's native-library requirements.
 
+From your actual clone location:
+
+```sh
+cd /home/soham/projects/tifrvpn-tui
+uv sync --locked
+source .venv/bin/activate
+```
+
+`cd` selects the project directory. `uv sync` creates or updates the local environment and installs the package plus its Python dependencies. `--locked` requires the checked-in lockfile to remain valid rather than silently updating it. Activation changes command lookup in this shell so commands resolve to `.venv/bin`. On another machine, replace the absolute clone path with its real location.
+
+Do not rerun `uv add PyGObject` merely to launch a fresh clone: the dependency is already declared. Use `uv add` when intentionally changing dependencies, and `uv sync --locked` to install the declared selection. The UV project install is editable; new Python processes read the checkout's source. Without shell activation, prefix commands with `uv run`, for example `uv run tifrvpn --help`. No explicit system interpreter override is needed in this final setup.
+
+The Python package installation does not create a TIFR account, migrate your vault, install OS services or enroll an authenticator. Complete those separate preparation steps below.
 
 ### 5.3 Verify which package and commands you will actually use
 
@@ -274,7 +281,7 @@ tifr-otp --help
 tifr-import-totp --help
 ```
 
-`type -a` can reveal aliases/functions and multiple executable candidates. `command -v` shows the selected command in that shell. Python prints its actual interpreter and imported package source. In an editable environment, the package location should correspond to this checkout's `src/tifrvpn`; in a normal installation it should correspond to that environment's installed files. All help paths are designed to work without a real vault, NetworkManager query or GUI startup.
+`type -a` can reveal aliases/functions and multiple executable candidates. `command -v` shows the selected command in that shell. Python prints its actual interpreter and imported package source. In an editable environment, the package location should correspond to this checkout's `src/tifrvpn`; in a normal installation it should correspond to that environment's installed files. Help paths do not read a real vault, query NetworkManager or open a GUI, but the module-level Python/native imports must be available even for help.
 
 If an old shell alias/function wins over the generated executable, activation alone may not override that alias/function. You can use the explicit environment command or `.../bin/python -m tifrvpn` to make the chosen implementation unambiguous. No alias, PATH setting or startup file was modified by this guide.
 
@@ -313,7 +320,7 @@ Use your ordinary desktop account, allowing NetworkManager's configured authoriz
 
 ```sh
 # Once per new shell when using this chosen environment:
-source "$HOME/.local/share/venvs/tifrvpn-package/bin/activate"
+source /home/soham/projects/tifrvpn-tui/.venv/bin/activate
 
 # Connect, then inspect the result:
 tifrvpn -c
@@ -376,7 +383,7 @@ Known rejected-login/session-replacement cases stop hidden automation and tell y
 10. `auth.authenticate` prepares a child-only environment. Explicit `Config` paths/entry are serialized as `_TIFR_WORKER_CONFIG` as well as corresponding TIFR overrides; passwords/cookies are not that payload.
 11. Start the same interpreter with `-m tifrvpn._sso_worker`, either directly or under Xvfb for quiet mode. Package installation makes this module reachable without the deleted manual source-path injection.
 12. `_sso_worker.sso_window_process` reconstructs Config if explicitly supplied and loads `gui.sso.login_cookie`; `_run` owns output/errors/immediate child shutdown.
-13. `login_cookie` lazily loads GI namespaces, creates an ephemeral WebKit context and GTK window, and restores valid allowed TIFR cookie records from the keyring before loading the portal.
+13. The worker module has already loaded its GI namespaces at module import. Calling `login_cookie` now creates the ephemeral WebKit context and GTK window, and restores valid allowed TIFR cookie records from the keyring before loading the portal.
 14. Event handlers and timers inspect only the intended SSO origin/realm. Known page errors stop repeated autofill; submitted-step tracking prevents blind repeats.
 15. Once an allowed form needs credentials, choose direct/loaded settings, run `credentials.validate_config`, GPG-decrypt the database master password, and read saved login fields from the KeePass CLI.
 16. At the OTP form, wait if fewer than five seconds remain in the assumed 30-second period, then obtain a fresh code from KeePassXC. JSON-encoded values are inserted into the restricted page's inputs and submitted using normal form events.
@@ -404,7 +411,7 @@ Known rejected-login/session-replacement cases stop hidden automation and tell y
 
 **OTP command:** parse flags → `load_config` → either validate and open credential setup, or call `credentials.get_code` → validate, decrypt, read_code → intentionally print the returned code at the CLI boundary.
 
-**QR import:** parse --image → lazily load GUI/scanner dependencies → camera frames or local image → grayscale/stride-correct array → ZXing QR text → `totp.decode_export` → display masked seed/settings/current code → manual paste into KeePassXC → stop devices and clear the live clipboard when appropriate.
+**QR import:** import the CLI/GUI modules and their dependencies → parse --image → call the scanner with a verified QApplication → camera frames or local image → grayscale/stride-correct array → ZXing QR text with an explicit BarcodeFormats selection → `totp.decode_export` validates field types → display masked seed/settings/current code → manual paste into KeePassXC → stop devices and conditionally clear the live clipboard.
 
 
 ### 7.3 How data crosses each boundary
@@ -543,14 +550,13 @@ A **console entry point** declares a generated executable-to-function connection
 The distribution name ending in “tui” is not evidence of a full-screen text UI implementation. This snapshot provides a CLI plus optional GTK/Qt graphical dialogs, and a library that another application could use.
 
 
-### 9.2 Why import safety and lazy dependencies matter
+### 9.2 Module-level imports and operation safety
 
-Importing Python still executes module-level definitions, imports and decorators; “safe import” does not mean literally no Python instruction runs. Here those definitions avoid real credential/config reading, child startup, sockets and GUI creation. GUI/crypto libraries are imported inside the operations that need them.
+The current source groups imports at the tops of modules. Importing executes module-level imports, definitions and decorators; it is not literally instruction-free. Importing a function loads its definition, while calling it executes its body. The earlier function-local/deferred imports are historical behavior and have been removed from the current source.
 
-This lets another program inspect the API, run help, discover modules or test pure TOTP without requiring a live desktop/VPN. It also makes unit tests isolate one behavior. A dependency being lazily imported is separate from whether packaging metadata requires it to be installed; this project's current dependency list still declares NumPy/PySide6/ZXing together.
+Dependencies therefore load sooner: importing the core package needs GI/Secret and cryptography, and importing the CLI also loads Qt/QR libraries. Missing dependencies can fail before a function's later error handling starts. The code still defers actual credential/config reads, process launches, network requests, window creation and camera capture until operations are called. The revised import test supplies dependency interfaces and rejects those application operations during import.
 
-Import safety also prevents the worker's `os._exit` from killing applications that merely import the module. The main guard and separation of `_run` confine immediate exit to deliberate worker execution. Once you actually call a relevant operation, its dependencies and permissions are still necessary.
-
+The worker remains an independent process. Its main guard keeps deliberate worker startup and its os._exit path out of ordinary imports. Grouping imports at module scope does not mean launching a GUI or opening a VPN at module scope. Section 15.5 walks through the distinction and the special GI namespace-selection ordering.
 
 ### 9.3 Relative imports, re-exports and internal names
 
@@ -578,17 +584,18 @@ A **normal install** installs built package contents into the environment. Editi
 
 Editing project metadata, generated entry-point declarations or package layout can still require reinstalling even in editable mode. Switching this editable checkout to main removes the `src/tifrvpn` tree and can make that environment's package/worker fail. Keeping the package checkout stable—or using a separate suitable checkout/worktree when needed—avoids confusing source disappearance with a VPN failure. No worktree or branch was switched during this documentation task.
 
-`pyproject.toml` declares project identity and allowed dependency ranges. `uv.lock` records selected dependency versions/artifacts; removing redundant argparse removes its lock record/references. `uv build` creates a source distribution and wheel. These are build artifacts, not an upload to a package registry. `py3-none-any` describes this wheel's Python-code packaging compatibility; the actual application still requires Linux/NetworkManager/GI and Linux memfd support.
+`pyproject.toml` declares project identity and allowed dependency ranges, including PyGObject. `uv.lock` records selected dependency versions/artifacts, including PyGObject 3.58.1 and Pycairo 1.29.2. The earlier redundant argparse dependency remains removed. `uv build` creates a source distribution and wheel. These are build artifacts, not an upload to a package registry. `py3-none-any` describes this wheel's Python-code packaging compatibility; the actual application still requires Linux/NetworkManager/GI and Linux memfd support.
 
 ## 10 Package branch — tests and verification
 
 
 ### 10.1 What was actually checked for this snapshot
 
-A separate system-Python virtual environment with system-site-packages was created outside your repository. The local project was installed editable with `uv pip install --no-deps --offline -e .` into that environment, using available system/cached prerequisites. This limited validation install is not the general beginner installation command: `--no-deps` intentionally skips installing declared dependencies, and offline success depends on what is already available.
+After PyGObject was installed through uv, the project's ordinary isolated Python 3.13.18 environment loaded all four GI namespaces: Secret 1, Gtk 3.0, WebKit2 4.1 and Soup 3.0. `uv run python -B -m unittest discover -s tests -q` was repeated during this documentation refresh and passed all 53 test methods.
 
-In that environment, `python -B -m unittest discover -s tests -v` passed **all 50 tests**. `uv build --offline` also produced both the source archive and wheel, with artifacts directed outside the repository. Your existing `.venv`, installed scripts, vault, keyring and active VPN state were not altered by these checks. No live TIFR sign-in/tunnel was attempted.
+Targeted Pyright checks for `config.py`, `totp.py` and `gui/qr_import.py` report zero errors/warnings. Ruff's selected TRY004 check for `totp.py` passes. These are targeted checks, not claims that every file passes every possible lint rule or that the whole project is fully typed. A separate offscreen check decoded an in-memory QR containing the public RFC test key, guarded copy before decoding, and verified conditional clipboard cleanup with a mocked clipboard.
 
+The earlier 50-test/build check used a separate system-Python environment; it is historical evidence for the earlier snapshot. It is not the installation route now required. This refresh does not claim a new build artifact or a live TIFR sign-in/tunnel test. Tests and inspection did not read personal vault contents or change a live VPN connection.
 
 ### 10.2 Test files, counts and what they establish
 
@@ -598,30 +605,46 @@ In that environment, `python -B -m unittest discover -s tests -v` passed **all 5
 | `test_auth.py` | 4 | Explicit Config reaches child; parent/PYTHONPATH preservation; malformed/failed worker output; portal response rules. |
 | `test_cli.py` | 8 | Option order, invalid arguments, help, toggling, status output, backend code preservation, notification gating, safe OTP errors. |
 | `test_config.py` | 5 | Defaults/JSON/environment, invalid config, nonprinting login parsing, missing fields, public RFC TOTP vector. |
-| `test_imports.py` | 1 | All modules import while optional dependencies and external work are deliberately blocked. |
+| `test_imports.py` | 1 | Fake dependency modules permit top-level imports while application subprocess/socket/configuration-read operations are blocked. |
 | `test_keyring.py` | 5 | Existing schema/server compatibility, separate browser key, clearing both kinds, safe warnings, clear-failure ordering. |
 | `test_networkmanager.py` | 7 | Duplicate/incompatible profiles, original settings, validation, backend status, verified anonymous secret handoff/cleanup. |
 | `test_packaging.py` | 4 | Generated commands, module/worker help, argument errors and safe library imports from unrelated directories without PYTHONPATH. |
 | `test_quiet.py` | 7 | Unlock/display ordering, missing dependencies, foreground path, X11/group setup, timeout escalation, cancellation, no hidden pinentry. |
 | `test_vpn.py` | 9 | Cached/fresh/active/busy/missing/ambiguous cases, failed sign-in/activation and idempotent disconnect. |
-| **Total** | **50** | Offline checks; mocks are not live desktop/server verification. |
+| `test_totp.py` | 3 | Decode public-key export fixtures with/without metadata; reject nine malformed-type/multi-part-batch cases using subTest. |
+| **Total** | **53** | Offline test methods; individual assertions/input cases are more numerous. Mocks are not live desktop/server verification. |
 
 Each full test function and its lines appear in the source appendix. **Mocks** return invented results and remember calls; **side_effect** can produce exceptions or successive fake states; **subTest** identifies a specific loop scenario; **TemporaryDirectory** isolates files; **patch** restores substitutions after a block or registered cleanup. Fake password/token strings in tests are examples, not personal credentials.
 
-The installation tests intentionally differ from unit tests run only with `PYTHONPATH=src`: they ask this interpreter's real generated executables to work from another directory, and use Python `-I` to ignore environment/user-path contamination. The import-safety test adds `-S` to skip site initialization and supplies only the intended source root while blocking external actions. These flags test import/install contracts, not a sandbox for actual VPN operations.
+The installation tests intentionally differ from unit tests run only with `PYTHONPATH=src`: they ask this interpreter's real generated executables to work from another directory, and use Python `-I` to ignore environment/user-path contamination. The import test adds `-S` to skip site initialization, supplies the intended source root and fake dependency module interfaces, then blocks application external actions. It now permits imported dependency names instead of treating their import itself as a failure. These flags test import/install contracts, not a sandbox for actual VPN operations.
 
 
-### 10.3 Repeat the documented checks in your selected installed environment
-
+### 10.3 Repeat the documented checks in the project environment
 
 ```sh
-source "$HOME/.local/share/venvs/tifrvpn-package/bin/activate"
-cd ~/projects/tifrvpn-tui
-python -B -m unittest discover -s tests -v
-uv build
+cd /home/soham/projects/tifrvpn-tui
+uv sync --locked
+uv run python -B -m unittest discover -s tests -v
+uvx pyright --pythonpath .venv/bin/python src/tifrvpn/config.py src/tifrvpn/totp.py src/tifrvpn/gui/qr_import.py
+uvx ruff check --select TRY004 src/tifrvpn/totp.py
+git diff --check
 ```
 
-Install first. A failure saying a generated executable is absent may mean the suite is running under another interpreter or an uninstalled environment. A passing suite does not prove server form compatibility, a working desktop keyring/authorization agent or a successful real tunnel.
+The explicit Pyright interpreter selects this environment for dependency lookup. The -B option avoids writing bytecode cache files. The unittest command runs existing checks without a real sign-in. `git diff --check` checks patch whitespace; it does not run Python. A passing suite does not prove server form compatibility, a working desktop authorization agent or a successful live tunnel.
+
+To create distributable archives as a separate task, use `uv build`; successful creation is not the same as publishing them.
+
+### 10.4 Earlier configuration-only verification — 8 November 2026
+
+From `/home/soham/projects/tifrvpn-tui`, the following checks were run against the updated working tree:
+
+```sh
+uvx pyright src/tifrvpn/config.py
+uv run python -B -m unittest discover -s tests -v
+git diff --check
+```
+
+Pyright reproduced the screenshot's **six errors** before the fix and reported **0 errors, 0 warnings, 0 informations** afterward. At that earlier point the offline suite passed all 50 tests, and `git diff --check` passed. The current snapshot adds three methods for a total of 53, as recorded above. This Pyright result covers `config.py`; it is not a package-wide type-check result. These checks did not include a live VPN sign-in or tunnel test.
 
 ## 11 Package branch — troubleshooting and maintenance
 
@@ -638,8 +661,9 @@ Check that the project is installed into the **same interpreter** running the co
 
 ### 11.3 Why do GI/GTK/WebKit/Secret imports fail in my environment?
 
-Verify system packages, interpreter ABI compatibility and whether the virtual environment exposes the relevant system site-packages. Your preexisting uv-managed .venv recorded false for that setting at inspection. A new environment's name alone does not prove native bindings are usable. Missing GUI requirements can appear only when the relevant operation is called because imports are deliberately lazy.
+`import gi` is supplied by the Python distribution PyGObject. In the current checkout, `uv sync --locked` installs it inside the isolated Python 3.13 environment. Confirm the actual interpreter and import location with `uv run python -c 'import sys, gi; print(sys.executable); print(gi.__file__)'`.
 
+If installation fails while compiling PyGObject/Pycairo, check native development libraries, compiler and Python headers. If gi imports but a namespace is unavailable, check that namespace's native runtime/introspection package and requested version. Python 3.14 and system-site-packages are not needed for the final uv route. Optional editor stubs do not fix missing runtime bindings. Since imports are now at module scope, missing dependencies can fail as soon as a module is imported; see sections 15.1–15.5 for the full explanation.
 
 ### 11.4 Why does a fresh quiet sign-in stop or show messages late?
 
@@ -665,7 +689,7 @@ The library returns a status object for ordinary inactive/not-configured cases. 
 - `get_code()` and GUI operations are synchronous and may prompt. Import safety does not make later credential/network calls side-effect-free or nonblocking.
 - Ephemeral WebKit profile storage is separate from deliberately remembered selected cookies in the desktop keyring. A silent callback-less controller can still involve external service dialogs.
 - NetworkManager `_run` may use its backend stderr in a typed error. The code keeps its own secret payload out of argv/ordinary progress, but callers should still inspect diagnostics before sharing personal networking information.
-- GUI/QR libraries are lazily imported but remain declared installation dependencies in this snapshot.
+- GUI/QR library imports are at module scope. Those Python/native dependencies must be available when the corresponding modules load, even if a later GUI operation is not requested.
 - The example config is now present; the unfilled license year/name placeholders remain unchanged. Old main observations should be read in their historical section.
 
 
@@ -685,30 +709,39 @@ The library returns a status object for ordinary inactive/not-configured cases. 
 - [ ] Explain why `PYTHONPATH=src` is weaker evidence than installed commands passing from another directory.
 - [ ] Read the current source sections relevant to the feature you want to change before editing it.
 
+### 11.9 Why does the editor report `str | None` in `config.py`?
+
+The JSON validation loop checks every supplied value, but Pyright does not infer a `dict[str, str]` from that loop. Its inferred optional values trigger errors at `Path(...)`, `entry.strip()` and `Config(...)`. The fix imports `cast` and adds `settings = cast(dict[str, str], settings)` immediately after successful JSON validation. The cast records the already-checked type; it does not convert values or replace validation. See [[#13.5 Package source — src/tifrvpn/config.py|the updated source and line-by-line explanation]] and [[#10.4 Earlier configuration-only verification — 8 November 2026|verification results]].
+
 ## 12 Package branch — references
 
-The repository snapshots, three branch commits and offline checks are evidence for project-specific statements. These primary references explain the language/packaging mechanisms used:
+The recorded commit history, exact current source and targeted/offline checks are evidence for project-specific statements. These primary references explain the language/packaging mechanisms used:
 
 - [Python packaging installation tutorial](https://packaging.python.org/en/latest/tutorials/installing-packages/) — environments and installing distributions.
 - [pip local project installs](https://pip.pypa.io/en/stable/topics/local-project-installs/) — normal versus editable installs and reinstall considerations.
 - [Entry points specification](https://packaging.python.org/en/latest/specifications/entry-points/) — generated console-script-to-function behavior.
 - [uv build backend](https://docs.astral.sh/uv/concepts/build-backend/) — source layout and module-name configuration.
-- [Python venv](https://docs.python.org/3.14/library/venv.html) — interpreter selection, activation and system-site-packages.
-- [Python dataclasses](https://docs.python.org/3.14/library/dataclasses.html) — generated record methods, frozen objects and post-initialization.
-- [Python packages](https://docs.python.org/3.14/tutorial/modules.html#packages) — package namespaces and relative imports.
-- [Python unittest](https://docs.python.org/3.14/library/unittest.html) and [unittest.mock](https://docs.python.org/3.14/library/unittest.mock.html) — regression checks, patches and fake call histories.
+- [Python venv](https://docs.python.org/3.13/library/venv.html) — interpreter selection, activation and system-site-packages.
+- [Python dataclasses](https://docs.python.org/3.13/library/dataclasses.html) — generated record methods, frozen objects and post-initialization.
+- [Python packages](https://docs.python.org/3.13/tutorial/modules.html#packages) — package namespaces and relative imports.
+- [Python unittest](https://docs.python.org/3.13/library/unittest.html) and [unittest.mock](https://docs.python.org/3.13/library/unittest.mock.html) — regression checks, patches and fake call histories.
+- [PyGObject installation](https://pygobject.gnome.org/getting_started.html#fedora) — Python bindings and native build/runtime prerequisites.
+- [uv locking and syncing](https://docs.astral.sh/uv/concepts/projects/sync/) — synchronize the isolated environment from the lockfile.
+- [Ruff TRY004](https://docs.astral.sh/ruff/rules/type-check-without-type-error/) — the general type-check exception recommendation.
+- [Qt QApplication](https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/QApplication.html) — widget application behavior.
+- [Git: recording changes](https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository) — working tree, staging area and commits.
 - [Obsidian heading folding](https://obsidian.md/help/folding) — collapse file or function headings to keep the source reference compact.
 
 The complete current source follows. The original main source remains embedded in [[TIFR Vpn TUI|the original guide]]; both guides can be read without the live source checkout at its original filesystem path.
 
 ## 13 Package branch — every current file
 
-This section embeds the **current branch snapshot**, separately from the earlier main snapshots. Every nonblank code line has an explanation; wrapped lines in one statement can share a labeled range. Blank source lines are retained. File overviews explain responsibility; function/test summaries explain purpose; the function and step subsections contain the exact source and its line-by-line notes.
+This section embeds the exact 34-file snapshot at **589be0d**, separately from the historical main snapshots. It includes the new decoder test file. Refreshed sections divide source into short numbered pieces; the pieces are consecutive parts of one file, not independent scripts to execute separately. Every nonblank code line has an explanation; wrapped lines in one statement can share a labeled range. Blank source lines are retained. File overviews explain responsibility; function/test summaries explain purpose; the function and step subsections contain the exact source and its line-by-line notes.
 
 ### 13.1 Package source — src/tifrvpn/__init__.py
 
 
-The public front door of the importable library. It re-exports the settings type, common error, status type and connection operations. Importing this file loads Python definitions; it does not itself call status/connect, read configuration, start programs, open windows or contact a server. The import-safety test checks all submodules under blocked optional imports and external actions.
+The public front door of the importable library. It re-exports the settings type, common error, status type and connection operations. Importing this file loads Python definitions; it does not itself call status/connect, read configuration, start programs, open windows or contact a server. The current import test supplies fake dependency interfaces and checks that importing submodules does not start application external operations.
 
 
 #### 13.1.1 L1–L20 · Module documentation, imports and shared definitions
@@ -757,7 +790,7 @@ __all__ = [
 - **L20** — Close the public-name list. No operation is invoked by listing its name here.
 
 
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.2 Package source — src/tifrvpn/__main__.py
 
@@ -785,7 +818,7 @@ if __name__ == "__main__":
 - **L6** — Call main, then raise SystemExit with the returned integer status. This process exit belongs at the CLI boundary, while ordinary library operations raise errors or return objects.
 
 
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.3 Package source — src/tifrvpn/vpn.py
 
@@ -1154,30 +1187,27 @@ def forget_login() -> None:
 - **L143** — Clear both saved browser and VPN session kinds through the dedicated keyring adapter.
 
 
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.4 Package source — src/tifrvpn/cli.py
 
-
-Terminal presentation and command dispatch now live in Python. This module replaces main’s Zsh argument parser, status formatting and desktop notifications, and gathers the OTP/importer command entry points. The library beneath it returns data and raises errors; these adapters choose printed output and numeric exit results. A package installer generates the public executable wrappers from pyproject.toml; no root-level launcher implementation remains in the current snapshot.
+Terminal adapters format messages and dispatch commands to the reusable library. Imports are now grouped at module scope, including the two Qt helper entry points. Consequently the command module requires those dependencies even for help; loading functions is separate from invoking VPN, vault or GUI operations.
 
 **Relation to main:** [[TIFR Vpn TUI#7.1 tifrvpn|tifrvpn]] — Zsh dispatch/output/notifications are rewritten as Python adapters, together with old OTP/importer CLI entry points.
 
 **Functions and their purpose**
 
-- **\_progress**, L22–L41: Define the progress callback the CLI passes to library operations. A caller embedding the library can supply a different callback or omit it.
-- **\_notify**, L44–L53: Define optional desktop notification delivery; this is presentation behavior, not a library-side state change.
-- **\_show\_status**, L56–L66: Format a structured VPNStatus as terminal output and return a CLI status number.
-- **\_connect**, L69–L74: Define the command adapter for connect. It receives the parsed quiet boolean, not raw command text.
-- **\_disconnect**, L77–L86: Define the command adapter for disconnect.
-- **\_vpn\_main**, L89–L146: Define VPN argument parsing/dispatch separately from its outer exception handler. Passing argv explicitly makes offline tests easy.
+- **_progress**, L25–L44: Define the progress callback the CLI passes to library operations. A caller embedding the library can supply a different callback or omit it.
+- **_notify**, L47–L56: Define optional desktop notification delivery; this is presentation behavior, not a library-side state change.
+- **_show_status**, L59–L69: Format a structured VPNStatus as terminal output and return a CLI status number.
+- **_connect**, L72–L77: Define the command adapter for connect. It receives the parsed quiet boolean, not raw command text.
+- **_disconnect**, L80–L89: Define the command adapter for disconnect.
+- **_vpn_main**, L92–L146: Define VPN argument parsing/dispatch separately from its outer exception handler. Passing argv explicitly makes offline tests easy.
 - **main**, L149–L178: Define the installed tifrvpn command entry point; an optional explicit argv is useful to tests/embedding adapters.
-- **otp\_main**, L181–L220: Define the installed tifr-otp entry point. It shares credential functions with the library, adding explicit terminal code output and setup dialogs.
-- **import\_totp\_main**, L223–L242: Define the installed tifr-import-totp entry point.
+- **otp_main**, L181–L218: Define the installed tifr-otp entry point. It shares credential functions with the library, adding explicit terminal code output and setup dialogs.
+- **import_totp_main**, L221–L238: Define the installed tifr-import-totp entry point.
 
-
-#### 13.4.1 L1–L21 · Module documentation, imports and shared definitions
-
+#### 13.4.1 L1–L24 · Module setup and definitions
 
 ```python
 """Terminal adapters for the public library and the optional GUI tools."""
@@ -1187,8 +1217,11 @@ import subprocess
 import sys
 
 from . import credentials, vpn
+from . import networkmanager as nm
 from .config import load_config
-from .errors import ConnectionBusy, VPNError
+from .errors import ConnectionBusy, ProfileNotFound, VPNError
+from .gui.credential_setup import setup
+from .gui.qr_import import run
 
 USAGE = "Usage: tifrvpn [-c [--quiet]|-d|-s|--setup|--forget-login|--help]"
 HELP = """Usage: tifrvpn [-c [--quiet]|-d|-s|--setup|--forget-login] (no option: toggle)
@@ -1199,23 +1232,26 @@ TIFR may ask you to confirm replacing another active session.
 --quiet alone connects. GPG can prompt before background sign-in; retry without --quiet if TIFR needs input.
 --forget-login clears remembered sign-in state from the desktop keyring.
 TOTP from KeePassXC/GPG: tifr-otp (first run: tifr-otp --setup)"""
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L1** — Docstring identifies this module as the terminal adapter around reusable operations and optional graphical tools.
-- **L3** — Use Python's built-in argument parser for the OTP and QR commands. The VPN dispatcher below remains a small hand-written parser to preserve existing option/toggle behavior.
-- **L4** — Import child-process support for optional notify-send and catchable command failures.
-- **L5** — Import command arguments and stdout/stderr streams.
-- **L7** — Import credential operations and the public-operation implementation modules; do not run them while importing.
-- **L8** — Import explicit config loading for the OTP command workflow.
-- **L9** — Import common and busy-state error categories for appropriate terminal reporting.
-- **L11** — Store short usage text once so invalid-option paths share the same syntax description.
-- **L12–L19** — Store the multiline --help text. These are literal display lines, not operations executed when the module is imported. They retain user-facing main-branch commands while their implementation is reorganized.
+- **L1** — Document this module responsibility and when its actual application operations run; this string does not execute those operations.
+- **L3** — Import argparse at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L4** — Import subprocess at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L5** — Import sys at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L7** — Bind credentials, vpn from . at module scope. These names are then available to the functions below without a function-local import.
+- **L8** — Bind networkmanager as nm from . at module scope. These names are then available to the functions below without a function-local import.
+- **L9** — Bind load_config from .config at module scope. These names are then available to the functions below without a function-local import.
+- **L10** — Bind ConnectionBusy, ProfileNotFound, VPNError from .errors at module scope. These names are then available to the functions below without a function-local import.
+- **L11** — Bind setup from .gui.credential_setup at module scope. These names are then available to the functions below without a function-local import.
+- **L12** — Bind run from .gui.qr_import at module scope. These names are then available to the functions below without a function-local import.
+- **L14** — Store short usage text once so invalid-option paths share the same syntax description.
+- **L15–L22** — Store the multiline --help text. These are literal display lines, not operations executed when the module is imported. They retain user-facing main-branch commands while their implementation is reorganized.
 
-
-#### 13.4.2 L22–L43 · _progress
-
+#### 13.4.2 L25–L46 · _progress
 
 ```python
 def _progress(message):
@@ -1238,23 +1274,23 @@ def _progress(message):
         print(message, file=sys.stderr, flush=True)
     else:
         print(message, flush=True)
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L22** — Define the progress callback the CLI passes to library operations. A caller embedding the library can supply a different callback or omit it.
-- **L23** — Explain the choice to color state markers even when output is redirected; this code does not first test isatty.
-- **L24** — Map the four display symbols to ANSI color codes: 32 for green and 33 for yellow.
-- **L25** — Only recolor messages starting with one of those markers.
-- **L26** — Wrap the first symbol in ANSI foreground escape sequences and append the rest of the message. message\[1:\] excludes the original first Unicode character.
-- **L27** — Stop searching once that starting symbol was handled.
-- **L28–L38** — Classify selected diagnostics/browser progress by substring membership. any(...) returns true for the first matching category; this determines stdout versus stderr, not whether authentication succeeded.
-- **L39** — Print those diagnostic/progress categories to stderr and flush immediately once the callback receives them.
-- **L40–L41** — Print other progress to stdout, also flushing. Worker messages may already have been buffered until the child finished before this callback receives them.
+- **L25** — Define the progress callback the CLI passes to library operations. A caller embedding the library can supply a different callback or omit it.
+- **L26** — Explain the choice to color state markers even when output is redirected; this code does not first test isatty.
+- **L27** — Map the four display symbols to ANSI color codes: 32 for green and 33 for yellow.
+- **L28** — Only recolor messages starting with one of those markers.
+- **L29** — Wrap the first symbol in ANSI foreground escape sequences and append the rest of the message. message\[1:\] excludes the original first Unicode character.
+- **L30** — Stop searching once that starting symbol was handled.
+- **L31–L41** — Classify selected diagnostics/browser progress by substring membership. any(...) returns true for the first matching category; this determines stdout versus stderr, not whether authentication succeeded.
+- **L42** — Print those diagnostic/progress categories to stderr and flush immediately once the callback receives them.
+- **L43–L44** — Print other progress to stdout, also flushing. Worker messages may already have been buffered until the child finished before this callback receives them.
 
-
-#### 13.4.3 L44–L55 · _notify
-
+#### 13.4.3 L47–L58 · _notify
 
 ```python
 def _notify(message):
@@ -1267,17 +1303,17 @@ def _notify(message):
         )
     except OSError:
         pass
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L44** — Define optional desktop notification delivery; this is presentation behavior, not a library-side state change.
-- **L45–L51** — Invoke notify-send with application/title/message arguments, ignore its nonzero exit status and discard both output streams.
-- **L52–L53** — Ignore an OS error such as notify-send being absent, so notification availability does not turn a successful VPN operation into a failed one.
+- **L47** — Define optional desktop notification delivery; this is presentation behavior, not a library-side state change.
+- **L48–L54** — Invoke notify-send with application/title/message arguments, ignore its nonzero exit status and discard both output streams.
+- **L55–L56** — Ignore an OS error such as notify-send being absent, so notification availability does not turn a successful VPN operation into a failed one.
 
-
-#### 13.4.4 L56–L68 · _show_status
-
+#### 13.4.4 L59–L71 · _show_status
 
 ```python
 def _show_status(result):
@@ -1291,20 +1327,20 @@ def _show_status(result):
     if result.details:
         print(result.details)
     return 0
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L56** — Format a structured VPNStatus as terminal output and return a CLI status number.
-- **L57–L59** — An absent profile prints a setup instruction and returns nonactive status 1.
-- **L60–L62** — Any other nonconnected state prints its exact value and returns 1.
-- **L63** — Print the green connected message through the common CLI progress formatter.
-- **L64–L65** — Show NetworkManager details when the result includes them.
-- **L66** — Return CLI success for an activated connection.
+- **L59** — Format a structured VPNStatus as terminal output and return a CLI status number.
+- **L60–L62** — An absent profile prints a setup instruction and returns nonactive status 1.
+- **L63–L65** — Any other nonconnected state prints its exact value and returns 1.
+- **L66** — Print the green connected message through the common CLI progress formatter.
+- **L67–L68** — Show NetworkManager details when the result includes them.
+- **L69** — Return CLI success for an activated connection.
 
-
-#### 13.4.5 L69–L76 · _connect
-
+#### 13.4.5 L72–L79 · _connect
 
 ```python
 def _connect(quiet):
@@ -1313,19 +1349,20 @@ def _connect(quiet):
     if not code and result.changed:
         _notify("Connected")
     return code
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L69** — Define the command adapter for connect. It receives the parsed quiet boolean, not raw command text.
-- **L70** — Call the public library operation and select \_progress as its readable-message callback.
-- **L71** — Format its structured result and retain the resulting exit status.
-- **L72–L73** — Notify only when the result is successful and changed=True; an already active connection does not repeatedly announce a new connection.
-- **L74** — Return the display/connection status to the entry point.
+- **L72** — Define the command adapter for connect. It receives the parsed quiet boolean, not raw command text.
+- **L73** — Call the public library operation and select \_progress as its readable-message callback.
+- **L74** — Format its structured result and retain the resulting exit status.
+- **L75** — Only announce a connection when the connection succeeded and this request actually changed tunnel state.
+- **L76** — Send the optional desktop notification after a newly successful connection.
+- **L77** — Return the display/connection status to the entry point.
 
-
-#### 13.4.6 L77–L88 · _disconnect
-
+#### 13.4.6 L80–L91 · _disconnect
 
 ```python
 def _disconnect():
@@ -1338,20 +1375,20 @@ def _disconnect():
     else:
         print("tifr VPN: already disconnected")
     return 0
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L77** — Define the command adapter for disconnect.
-- **L78** — Run library disconnect with CLI progress reporting.
-- **L79–L80** — Explain a missing profile as nothing to disconnect.
-- **L81–L83** — If this operation actually changed state, print Disconnected and attempt a desktop notification.
-- **L84–L85** — Otherwise print already disconnected rather than announcing another state change.
-- **L86** — Disconnecting an absent/inactive connection is successful, so return 0.
+- **L80** — Define the command adapter for disconnect.
+- **L81** — Run library disconnect with CLI progress reporting.
+- **L82–L83** — Explain a missing profile as nothing to disconnect.
+- **L84–L86** — If this operation actually changed state, print Disconnected and attempt a desktop notification.
+- **L87–L88** — Otherwise print already disconnected rather than announcing another state change.
+- **L89** — Disconnecting an absent/inactive connection is successful, so return 0.
 
-
-#### 13.4.7 L89–L120 · _vpn_main · section 1
-
+#### 13.4.7 L92–L123 · _vpn_main
 
 ```python
 def _vpn_main(argv):
@@ -1390,23 +1427,21 @@ def _vpn_main(argv):
 
 **Line-by-line explanation**
 
-- **L89** — Define VPN argument parsing/dispatch separately from its outer exception handler. Passing argv explicitly makes offline tests easy.
-- **L90** — Initialize no selected action.
-- **L91** — Initialize the quiet flag as off.
-- **L92** — Inspect each supplied argument in its original order.
-- **L93–L94** — Recognize --quiet as a modifier; defer acting until the entire list has been validated.
-- **L95–L103** — Recognize the supported main actions: connect, disconnect, status, profile setup, cache clearing and either help spelling.
-- **L104–L109** — Reject a second selected action, including repetitions; print the readable error to stderr and return argument-error status 2.
-- **L110** — Remember the recognized action for later dispatch.
-- **L111–L113** — Reject any unknown argument before running a VPN operation.
-- **L114** — After parsing, apply quiet-mode action rules.
-- **L115–L117** — Reject quiet with any explicit nonconnect action and explain the allowed use on stderr.
-- **L118** — Make --quiet alone choose connect.
-- **L119–L120** — Print help and succeed without requiring NetworkManager or opening credentials.
+- **L92** — Define VPN argument parsing/dispatch separately from its outer exception handler. Passing argv explicitly makes offline tests easy.
+- **L93** — Initialize no selected action.
+- **L94** — Initialize the quiet flag as off.
+- **L95** — Inspect each supplied argument in its original order.
+- **L96–L97** — Recognize --quiet as a modifier; defer acting until the entire list has been validated.
+- **L98–L106** — Recognize the supported main actions: connect, disconnect, status, profile setup, cache clearing and either help spelling.
+- **L107–L112** — Reject a second selected action, including repetitions; print the readable error to stderr and return argument-error status 2.
+- **L113** — Remember the recognized action for later dispatch.
+- **L114–L116** — Reject any unknown argument before running a VPN operation.
+- **L117** — After parsing, apply quiet-mode action rules.
+- **L118–L120** — Reject quiet with any explicit nonconnect action and explain the allowed use on stderr.
+- **L121** — Make --quiet alone choose connect.
+- **L122–L123** — Print help and succeed without requiring NetworkManager or opening credentials.
 
-
-#### 13.4.8 L121–L148 · _vpn_main · section 2
-
+#### 13.4.8 L124–L148 · _vpn_main
 
 ```python
         return 0
@@ -1424,9 +1459,6 @@ def _vpn_main(argv):
     if action == "-c":
         return _connect(quiet)
     # No arguments: retain the original toggle, including transitional states.
-    from . import networkmanager as nm
-    from .errors import ProfileNotFound
-
     nm.require_available()
     try:
         state = nm.state(nm.profile_uuid())
@@ -1435,27 +1467,26 @@ def _vpn_main(argv):
     if state and state != "deactivated":
         return _disconnect()
     return _connect(False)
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L121** — Print help and succeed without requiring NetworkManager or opening credentials.
-- **L122–L124** — For --setup, call library setup with CLI progress and return success.
-- **L125–L128** — For --forget-login, clear cached state, explain that a running tunnel is unaffected, and return success.
-- **L129–L130** — For -s, query structured status and convert it to terminal output/exit status.
-- **L131–L132** — For -d, run the disconnect adapter.
-- **L133–L134** — For -c, run the connect adapter with the validated quiet flag.
-- **L135** — Comment identifies the no-argument fallback as preservation of main's original toggle behavior, including transitional states.
-- **L136–L137** — Import backend state access and the missing-profile error for toggle's particular decision. Imports still do no actual query until the following call.
+- **L124** — Print help and succeed without requiring NetworkManager or opening credentials.
+- **L125–L127** — For --setup, call library setup with CLI progress and return success.
+- **L128–L131** — For --forget-login, clear cached state, explain that a running tunnel is unaffected, and return success.
+- **L132–L133** — For -s, query structured status and convert it to terminal output/exit status.
+- **L134–L135** — For -d, run the disconnect adapter.
+- **L136–L137** — For -c, run the connect adapter with the validated quiet flag.
+- **L138** — Comment identifies the no-argument fallback as preservation of main's original toggle behavior, including transitional states.
 - **L139** — Check networking tools/service before querying toggle state.
 - **L140–L141** — Find the profile and obtain its current state.
 - **L142–L143** — An absent profile is treated as no existing connection state for toggle, allowing connect to create it later.
 - **L144–L145** — Any nonempty state other than deactivated chooses disconnect; this includes activating transitions.
 - **L146** — Otherwise choose ordinary visible-mode connect. Quiet alone was already explicitly dispatched above.
 
-
 #### 13.4.9 L149–L180 · main
-
 
 ```python
 def main(argv=None):
@@ -1488,6 +1519,8 @@ def main(argv=None):
             file=sys.stderr,
         )
         return 1
+
+
 ```
 
 **Line-by-line explanation**
@@ -1500,9 +1533,7 @@ def main(argv=None):
 - **L167–L172** — Handle missing imported runtime libraries with a Fedora/dnf-oriented suggestion and failure status. Actual package names depend on the Linux distribution.
 - **L173–L178** — For expected OS/value/subprocess problems, print a generic preparation error without the raw exception's possibly sensitive contents and return 1.
 
-
-#### 13.4.10 L181–L212 · otp_main · section 1
-
+#### 13.4.10 L181–L212 · otp_main
 
 ```python
 def otp_main(argv=None):
@@ -1522,8 +1553,6 @@ def otp_main(argv=None):
         config = load_config()
         if args.setup:
             credentials.validate_config(config)
-            from .gui.credential_setup import setup
-
             return setup(
                 config.password_file,
                 config.database,
@@ -1537,6 +1566,8 @@ def otp_main(argv=None):
         print("\nTIFR OTP: cancelled.", file=sys.stderr)
         return 130
     except RuntimeError as error:
+        print(f"TIFR OTP: {error}", file=sys.stderr)
+        return 1
 ```
 
 **Line-by-line explanation**
@@ -1549,36 +1580,30 @@ def otp_main(argv=None):
 - **L192–L193** — Reject --recipient without --setup because ordinary code retrieval performs decryption, not new encryption.
 - **L194–L195** — Begin protected OTP work by loading the package's Config object.
 - **L196–L197** — For setup, check the vault exists and GPG is available before displaying setup dialogs.
-- **L198** — Import the Qt setup function only when that action is requested. The GUI library itself is imported inside setup, keeping ordinary imports lightweight.
-- **L200–L206** — Run credential setup with the selected paths, entry, recipient and CLI progress callback; return its success/cancellation status.
-- **L207** — Otherwise call the nonprinting credentials.get\_code and explicitly print its returned short-lived code at this terminal boundary.
-- **L208** — Return success after output.
-- **L209–L211** — Handle user cancellation with a readable diagnostic and status 130.
-- **L212** — Show deliberate RuntimeError/CredentialError messages and return 1. CredentialError inherits RuntimeError through VPNError.
+- **L198–L204** — Run credential setup with the selected paths, entry, recipient and CLI progress callback; return its success/cancellation status.
+- **L205** — Otherwise call the nonprinting credentials.get\_code and explicitly print its returned short-lived code at this terminal boundary.
+- **L206** — Return success after output.
+- **L207–L209** — Handle user cancellation with a readable diagnostic and status 130.
+- **L210–L212** — Show deliberate RuntimeError/CredentialError messages and return 1. CredentialError inherits RuntimeError through VPNError.
 
-
-#### 13.4.11 L213–L222 · otp_main · section 2
-
+#### 13.4.11 L213–L220 · otp_main
 
 ```python
-        print(f"TIFR OTP: {error}", file=sys.stderr)
-        return 1
     except (OSError, UnicodeError, subprocess.SubprocessError, ImportError):
         print(
             "TIFR OTP: operation failed. No password or code was logged.",
             file=sys.stderr,
         )
         return 1
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L213–L214** — Show deliberate RuntimeError/CredentialError messages and return 1. CredentialError inherits RuntimeError through VPNError.
-- **L215–L220** — Hide raw filesystem, encoding, subprocess and import exception contents behind a generic OTP failure message and status 1.
+- **L213–L218** — Hide raw filesystem, encoding, subprocess and import exception contents behind a generic OTP failure message and status 1.
 
-
-#### 13.4.12 L223–L242 · import_totp_main
-
+#### 13.4.12 L221–L238 · import_totp_main
 
 ```python
 def import_totp_main(argv=None):
@@ -1592,8 +1617,6 @@ def import_totp_main(argv=None):
     )
     args = parser.parse_args(argv)
     try:
-        from .gui.qr_import import run
-
         return run(image=args.image)
     except Exception:  # noqa: BLE001 - Never expose authentication data from backend errors.
         print(
@@ -1605,31 +1628,32 @@ def import_totp_main(argv=None):
 
 **Line-by-line explanation**
 
-- **L223** — Define the installed tifr-import-totp entry point.
-- **L224–L226** — Create its parser before importing heavy GUI/camera dependencies, keeping --help available independently.
-- **L227–L231** — Register --image as a boolean requesting local-image mode without webcam startup.
-- **L232** — Parse command-line arguments.
-- **L233–L234** — Only import the scanner runner after argument parsing succeeds and actual scanning is requested.
-- **L236** — Run the optional Qt scanner with the parsed image flag and return its GUI event-loop result.
-- **L237–L242** — Catch ordinary scanner startup exceptions, avoid raw QR-bearing details, print a generic stderr message and return failure. This does not catch BaseException categories such as KeyboardInterrupt/SystemExit.
+- **L221** — Define the installed tifr-import-totp entry point.
+- **L222–L224** — Create its parser before importing heavy GUI/camera dependencies, keeping --help available independently.
+- **L225–L229** — Register --image as a boolean requesting local-image mode without webcam startup.
+- **L230** — Parse command-line arguments.
+- **L231** — Only import the scanner runner after argument parsing succeeds and actual scanning is requested.
+- **L232** — Run the optional Qt scanner with the parsed image flag and return its GUI event-loop result.
+- **L233–L238** — Catch ordinary scanner startup exceptions, avoid raw QR-bearing details, print a generic stderr message and return failure. This does not catch BaseException categories such as KeyboardInterrupt/SystemExit.
 
-
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.5 Package source — src/tifrvpn/config.py
 
 
 Settings are now an immutable Config object plus a loader, extracted from main’s tifr-otp.py configuration(). Reading configuration is separated from checking a real database and executable availability, which moved to credentials.validate_config(). This makes import and direct Config construction useful to other Python programs before they touch credentials.
 
+**8 November 2026 typing fix:** Pyright could not carry the string-value guarantee from the `any(...)` validation loop into later dictionary lookups. It therefore inferred `str | None` for values passed to `Path`, `entry.strip()` and `Config`. Adding `from typing import cast` and, after successful validation, `settings = cast(dict[str, str], settings)` makes the validated type explicit. Defaults, environment precedence and runtime validation remain unchanged.
+
 **Relation to main:** [[TIFR Vpn TUI#7.2 tifr-otp.py|tifr-otp.py]] — configuration() is split into Config/load_config and runtime credentials.validate_config.
 
 **Functions and their purpose**
 
-- **Config.\_\_post\_init\_\_**, L20–L30: Define post-initialization normalization called by the dataclass-generated initializer after assigning its fields.
-- **load\_config**, L33–L81: Load defaults, optional JSON settings, and TIFR\_KEEPASS\_\* overrides.
+- **Config.\_\_post\_init\_\_**, L21–L31: Define post-initialization normalization called by the dataclass-generated initializer after assigning its fields.
+- **load\_config**, L34–L83: Load defaults, optional JSON settings, and TIFR\_KEEPASS\_\* overrides.
 
 
-#### 13.5.1 L1–L13 · Module documentation, imports and shared definitions
+#### 13.5.1 L1–L14 · Module documentation, imports and shared definitions
 
 
 ```python
@@ -1639,6 +1663,7 @@ import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 from .errors import ConfigurationError
 
@@ -1653,12 +1678,13 @@ HOST = "sslvpn.tifr.res.in"
 - **L4** — Import environment-variable access for XDG and TIFR\_KEEPASS overrides.
 - **L5** — Import the dataclass decorator to generate an initializer, representation and equality behavior from declared fields.
 - **L6** — Import Path for filesystem path objects and home expansion.
-- **L8** — Use the package's typed configuration exception rather than a bare RuntimeError.
-- **L10** — Centralize the fixed TIFR VPN portal URL for profile checks and keyring attributes.
-- **L11** — Centralize its hostname for TLS, cookies and portal requests.
+- **L7** — Import `cast` to tell the type checker the type of settings after runtime validation.
+- **L9** — Use the package's typed configuration exception rather than a bare RuntimeError.
+- **L11** — Centralize the fixed TIFR VPN portal URL for profile checks and keyring attributes.
+- **L12** — Centralize its hostname for TLS, cookies and portal requests.
 
 
-#### 13.5.2 L14–L19 · Config — type/state/test structure
+#### 13.5.2 L15–L20 · Config — type/state/test structure
 
 
 ```python
@@ -1671,14 +1697,14 @@ class Config:
 
 **Line-by-line explanation**
 
-- **L14** — Turn the following class into a frozen dataclass. Its fields cannot be reassigned through ordinary attribute assignment after initialization; frozen is a programming contract, not a security sandbox.
-- **L15** — Define Config, the structured settings object passed between library components.
-- **L16** — Declare the KeePass database path field. The annotation describes the expected type; it is not automatic runtime type enforcement by itself.
-- **L17** — Declare the GPG-encrypted database-master-password path.
-- **L18** — Declare the KeePass entry path, defaulting to TIFR when omitted.
+- **L15** — Turn the following class into a frozen dataclass. Its fields cannot be reassigned through ordinary attribute assignment after initialization; frozen is a programming contract, not a security sandbox.
+- **L16** — Define Config, the structured settings object passed between library components.
+- **L17** — Declare the KeePass database path field. The annotation describes the expected type; it is not automatic runtime type enforcement by itself.
+- **L18** — Declare the GPG-encrypted database-master-password path.
+- **L19** — Declare the KeePass entry path, defaulting to TIFR when omitted.
 
 
-#### 13.5.3 L20–L32 · Config.__post_init__
+#### 13.5.3 L21–L33 · Config.__post_init__
 
 
 ```python
@@ -1697,14 +1723,14 @@ class Config:
 
 **Line-by-line explanation**
 
-- **L20** — Define post-initialization normalization called by the dataclass-generated initializer after assigning its fields.
-- **L21** — Convert database to Path and expand a leading ~. object.\_\_setattr\_\_ deliberately performs this construction-time normalization despite the class being frozen.
-- **L22** — Apply the same normalization to the ciphertext pathname.
-- **L23–L27** — Reject nonabsolute paths after home expansion or a blank entry name. These are shape checks; they do not yet require either file to exist.
-- **L28–L30** — Raise ConfigurationError with a readable instruction when those settings are invalid.
+- **L21** — Define post-initialization normalization called by the dataclass-generated initializer after assigning its fields.
+- **L22** — Convert database to Path and expand a leading ~. object.\_\_setattr\_\_ deliberately performs this construction-time normalization despite the class being frozen.
+- **L23** — Apply the same normalization to the ciphertext pathname.
+- **L24–L28** — Reject nonabsolute paths after home expansion or a blank entry name. These are shape checks; they do not yet require either file to exist.
+- **L29–L31** — Raise ConfigurationError with a readable instruction when those settings are invalid.
 
 
-#### 13.5.4 L33–L64 · load_config · section 1
+#### 13.5.4 L34–L66 · load_config · section 1
 
 
 ```python
@@ -1733,6 +1759,7 @@ def load_config() -> Config:
         raise ConfigurationError(
             "Configuration accepts only nonempty database, entry and password_file strings."
         )
+    settings = cast(dict[str, str], settings)
     database = Path(
         os.environ.get(
             "TIFR_KEEPASS_DATABASE",
@@ -1744,20 +1771,21 @@ def load_config() -> Config:
 
 **Line-by-line explanation**
 
-- **L33** — Define explicit settings loading and annotate the returned Config type. Merely importing this function does not read the user's config file.
-- **L34** — State precedence: defaults, then optional JSON fields, then the corresponding environment overrides.
-- **L35–L40** — Build XDG\_CONFIG\_HOME/tifr-vpn/config.json, defaulting the base directory to ~/.config and expanding a leading ~.
-- **L41** — Start guarded reading/JSON parsing.
-- **L42** — Read and parse the optional file when present; otherwise begin with an empty dictionary so defaults will apply.
-- **L43** — Catch filesystem access errors and JSON/value parsing errors.
-- **L44–L46** — Replace the lower-level failure with a readable ConfigurationError naming the config path, suppressing chained internal details.
-- **L47–L54** — Require a dictionary, only the three known keys, and nonempty string values. The generator checks each supplied value; unsupported keys are found by set subtraction.
-- **L55–L57** — Report unsupported JSON shape/keys/values with the package-specific exception.
-- **L58–L63** — Select database from TIFR\_KEEPASS\_DATABASE, otherwise the JSON field, otherwise the default KeePass path; convert it to Path and expand ~.
-- **L64** — Select the encrypted master-password file with the same environment → JSON → default precedence, then normalize its path.
+- **L34** — Define explicit settings loading and annotate the returned Config type. Merely importing this function does not read the user's config file.
+- **L35** — State precedence: defaults, then optional JSON fields, then the corresponding environment overrides.
+- **L36–L41** — Build XDG\_CONFIG\_HOME/tifr-vpn/config.json, defaulting the base directory to ~/.config and expanding a leading ~.
+- **L42** — Start guarded reading/JSON parsing.
+- **L43** — Read and parse the optional file when present; otherwise begin with an empty dictionary so defaults will apply.
+- **L44** — Catch filesystem access errors and JSON/value parsing errors.
+- **L45–L47** — Replace the lower-level failure with a readable ConfigurationError naming the config path, suppressing chained internal details.
+- **L48–L55** — Require a dictionary, only the three known keys, and nonempty string values. The generator checks each supplied value; unsupported keys are found by set subtraction.
+- **L56–L58** — Report unsupported JSON shape/keys/values with the package-specific exception.
+- **L59** — Mark the validated settings as `dict[str, str]`. `cast` returns the same dictionary without conversion or additional runtime checks; the preceding validation establishes that its allowed keys and values are strings. With string defaults, the following `.get()` calls now resolve to strings for type checking.
+- **L60–L65** — Select database from TIFR\_KEEPASS\_DATABASE, otherwise the JSON field, otherwise the default KeePass path; convert it to Path and expand ~.
+- **L66** — Select the encrypted master-password file with the same environment → JSON → default precedence, then normalize its path.
 
 
-#### 13.5.5 L65–L81 · load_config · section 2
+#### 13.5.5 L67–L83 · load_config · section 2
 
 
 ```python
@@ -1782,14 +1810,14 @@ def load_config() -> Config:
 
 **Line-by-line explanation**
 
-- **L65–L71** — Select the encrypted master-password file with the same environment → JSON → default precedence, then normalize its path.
-- **L72** — Choose the entry name from TIFR\_KEEPASS\_ENTRY, then JSON entry, then TIFR.
-- **L73–L77** — Check absolute paths and nonblank entry before constructing the settings object. This duplicates the class's basic validation so both the loader and direct construction enforce the required form.
-- **L78–L80** — Raise a readable configuration error when that check fails.
-- **L81** — Return one Config object instead of main's three-element tuple. Callers now use config.database, config.password\_file and config.entry.
+- **L67–L73** — Select the encrypted master-password file with the same environment → JSON → default precedence, then normalize its path.
+- **L74** — Choose the entry name from TIFR\_KEEPASS\_ENTRY, then JSON entry, then TIFR.
+- **L75–L79** — Check absolute paths and nonblank entry before constructing the settings object. This duplicates the class's basic validation so both the loader and direct construction enforce the required form.
+- **L80–L82** — Raise a readable configuration error when that check fails.
+- **L83** — Return one Config object instead of main's three-element tuple. Callers now use config.database, config.password\_file and config.entry.
 
 
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.6 Package source — src/tifrvpn/errors.py
 
@@ -1925,7 +1953,7 @@ class ConnectionBusy(NetworkManagerError):
 - **L31** — Class docstring explains the transitional-state case; the class otherwise inherits the common message/status behavior.
 
 
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.7 Package source — src/tifrvpn/credentials.py
 
@@ -2308,7 +2336,7 @@ def get_code(*, config: Config | None = None) -> str:
 - **L171** — Ask KeePassXC for a fresh current code and return it directly. cli.otp\_main is the separate layer that intentionally prints it for a terminal user.
 
 
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.8 Package source — src/tifrvpn/auth.py
 
@@ -2596,24 +2624,21 @@ def authenticate(*, quiet=False, config=None, on_progress=None):
 - **L140** — Return the cookie as data in memory to the orchestration layer.
 
 
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.9 Package source — src/tifrvpn/_sso_worker.py
 
-
-The private worker entry point replaces main’s --sso-window self-invocation mode. It reconstructs explicit settings, lazily loads the GUI, writes only the cookie to stdout and keeps native WebKit shutdown isolated in a disposable process. The underscore in the filename signals internal use. Importing the module defines functions but does not call os._exit; process termination is reached only through the intentionally executed worker workflow.
+The private browser-worker entry point imports Config and the SSO function at module scope. Import loads the GTK/WebKit dependencies, but only deliberate worker execution calls login_cookie or os._exit. The parent still starts this module in a separate process.
 
 **Relation to main:** [[TIFR Vpn TUI#7.3 tifr-vpn-auth.py|tifr-vpn-auth.py]] — sso_window_process becomes a dedicated -m worker entry point with explicit config reconstruction.
 
 **Functions and their purpose**
 
-- **sso\_window\_process**, L9–L15: Define the worker's actual sign-in invocation, with quiet defaulting to False.
-- **\_run**, L18–L41: Separate execution/error/shutdown handling from loading the browser function, making it possible to reason about or test without opening a real GUI.
+- **sso_window_process**, L12–L15: Define the worker's actual sign-in invocation, with quiet defaulting to False.
+- **_run**, L18–L41: Separate execution/error/shutdown handling from loading the browser function, making it possible to reason about or test without opening a real GUI.
 - **main**, L44–L48: Define the worker CLI adapter, optionally accepting explicit arguments for help/tests.
 
-
-#### 13.9.1 L1–L8 · Module documentation, imports and shared definitions
-
+#### 13.9.1 L1–L11 · Module setup and definitions
 
 ```python
 """Private subprocess entry point; never exits a process merely on import."""
@@ -2622,42 +2647,42 @@ import argparse
 import json
 import os
 import sys
+
+from .config import Config
+from .gui.sso import login_cookie
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L1** — Document the private subprocess purpose and import-safe behavior.
-- **L3** — Use argparse to parse worker-only --quiet/help options.
-- **L4** — Use JSON to decode parent-supplied config fields.
-- **L5** — Read the child environment and perform immediate process exit in the guarded execution path.
-- **L6** — Use stdout for returned cookie data and stderr for diagnostics.
+- **L1** — Document this module responsibility and when its actual application operations run; this string does not execute those operations.
+- **L3** — Import argparse at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L4** — Import json at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L5** — Import os at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L6** — Import sys at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L8** — Bind Config from .config at module scope. These names are then available to the functions below without a function-local import.
+- **L9** — Bind login_cookie from .gui.sso at module scope. These names are then available to the functions below without a function-local import.
 
-
-#### 13.9.2 L9–L17 · sso_window_process
-
+#### 13.9.2 L12–L17 · sso_window_process
 
 ```python
 def sso_window_process(*, quiet=False):
-    from .config import Config
-    from .gui.sso import login_cookie
-
     raw = os.environ.get("_TIFR_WORKER_CONFIG")
     config = Config(**json.loads(raw)) if raw is not None else None
     _run(login_cookie, quiet=quiet, config=config)
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L9** — Define the worker's actual sign-in invocation, with quiet defaulting to False.
-- **L10** — Load the settings type only when this function executes.
-- **L11** — Load the browser implementation function. Its heavy GI libraries are imported inside login\_cookie, so module imports remain side-effect-free.
+- **L12** — Define the worker's actual sign-in invocation, with quiet defaulting to False.
 - **L13** — Read the private config payload supplied by auth.authenticate, if any.
 - **L14** — If provided, JSON-decode the payload and unpack its named fields into Config; otherwise leave config=None so the GUI loads normal settings when needed. \*\*dictionary expands keyword arguments.
 - **L15** — Call the protected execution helper with the browser function and settings. Config decoding/imports occur before that helper's own try block; not every malformed private payload is handled inside \_run.
 
-
 #### 13.9.3 L18–L43 · _run
-
 
 ```python
 def _run(login_cookie, *, quiet=False, config=None):
@@ -2684,6 +2709,8 @@ def _run(login_cookie, *, quiet=False, config=None):
         # of its GI wrappers after the window closes.
         sys.stderr.flush()
         os._exit(code)
+
+
 ```
 
 **Line-by-line explanation**
@@ -2697,9 +2724,7 @@ def _run(login_cookie, *, quiet=False, config=None):
 - **L35–L36** — For other ordinary exceptions, print a generic incomplete-sign-in diagnostic.
 - **L37–L41** — Always flush diagnostics and immediately terminate this dedicated child using os.\_exit(code). It bypasses normal Python finalization of native WebKit wrappers, so it is confined to this deliberate subprocess role.
 
-
 #### 13.9.4 L44–L52 · main
-
 
 ```python
 def main(argv=None):
@@ -2720,57 +2745,57 @@ if __name__ == "__main__":
 - **L46** — Register the private boolean --quiet flag.
 - **L47** — Parse arguments; --help exits before sign-in/GI operations are invoked.
 - **L48** — Run the isolated sign-in path using the chosen flag.
-- **L51–L52** — Invoke the worker CLI only when the module is executed as \_\_main\_\_; importing it during another application's startup does not end that application.
+- **L51** — Run the worker entry point only when this module is executed as a program; ordinary import does not call main.
+- **L52** — Parse the worker arguments and begin deliberate worker execution.
 
-
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.10 Package source — src/tifrvpn/keyring.py
 
-
-A named adapter around desktop Secret Service replaces the multifunction saved_login() inside main’s authentication script. The schema name, server attribute and session/browser kinds are preserved, so old and new implementations use the same cache identity on the same desktop keyring. Importing this module does not import GI or contact the keyring; operations load those bindings lazily. The clearer wrappers make accidental mixing of session and browser state less likely.
+This module binds the Secret Service API when imported. Namespace version selection precedes the GI from-import. Lookup/store/delete operations still occur only when a helper function is called. Tests now replace the Secret name already bound in this module.
 
 **Relation to main:** [[TIFR Vpn TUI#7.3 tifr-vpn-auth.py|tifr-vpn-auth.py]] — saved_login becomes a private primitive plus named session/browser read/write/clear helpers.
 
 **Functions and their purpose**
 
-- **\_saved\_login**, L7–L41: Keep only this helper's session state in the desktop Secret Service.
-- **load\_session**, L44–L45: Publicly named helper to load the reusable VPN session cookie under kind=session.
-- **save\_session**, L48–L49: Publicly named helper to store that cookie under kind=session.
-- **load\_browser\_state**, L52–L53: Load serialized browser-cookie records under the separate kind=browser identity.
-- **save\_browser\_state**, L56–L57: Store serialized browser state separately from the direct VPN-session cookie.
-- **clear\_saved\_login**, L60–L66: Define full remembered-state clearing, a different action from disconnecting a tunnel.
-- **clear\_session**, L69–L70: Clear only the stale direct session cookie during a connect retry, preserving browser cookies that might help the next SSO attempt.
+- **_saved_login**, L12–L41: Keep only this helper's session state in the desktop Secret Service.
+- **load_session**, L44–L45: Publicly named helper to load the reusable VPN session cookie under kind=session.
+- **save_session**, L48–L49: Publicly named helper to store that cookie under kind=session.
+- **load_browser_state**, L52–L53: Load serialized browser-cookie records under the separate kind=browser identity.
+- **save_browser_state**, L56–L57: Store serialized browser state separately from the direct VPN-session cookie.
+- **clear_saved_login**, L60–L66: Define full remembered-state clearing, a different action from disconnecting a tunnel.
+- **clear_session**, L69–L70: Clear only the stale direct session cookie during a connect retry, preserving browser cookies that might help the next SSO attempt.
 
-
-#### 13.10.1 L1–L6 · Module documentation, imports and shared definitions
-
+#### 13.10.1 L1–L11 · Module setup and definitions
 
 ```python
 """Store only this application's sign-in state in desktop Secret Service."""
 
+import gi
+
 from .config import URL
 from .errors import AuthenticationError
+
+gi.require_version("Secret", "1")
+from gi.repository import Secret  # noqa: E402 - Select the namespace version first.
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L1** — State that this adapter stores this application's remembered sign-in state, not the entire vault or GPG key material.
-- **L3** — Use the unchanged fixed portal URL as a lookup attribute, keeping cache compatibility with main.
-- **L4** — Use AuthenticationError when an explicit full-cache clear cannot be completed.
+- **L1** — Document this module responsibility and when its actual application operations run; this string does not execute those operations.
+- **L3** — Import gi at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L5** — Bind URL from .config at module scope. These names are then available to the functions below without a function-local import.
+- **L6** — Bind AuthenticationError from .errors at module scope. These names are then available to the functions below without a function-local import.
+- **L8** — Select the Secret API namespace version before importing it. This chooses an API version, not a Python interpreter version.
+- **L9** — Import Secret from the selected GI namespaces at module scope. Version selection above must happen first; the E402 comment documents that intentional import ordering.
 
-
-#### 13.10.2 L7–L38 · _saved_login · section 1
-
+#### 13.10.2 L12–L43 · _saved_login
 
 ```python
 def _saved_login(kind, value=None, *, forget=False, on_progress=None):
     """Keep only this helper's session state in the desktop Secret Service."""
-    import gi
-
-    gi.require_version("Secret", "1")
-    from gi.repository import Secret
-
     schema = Secret.Schema.new(
         "in.res.tifr.vpn",
         Secret.SchemaFlags.NONE,
@@ -2796,91 +2821,78 @@ def _saved_login(kind, value=None, *, forget=False, on_progress=None):
     except Exception:  # noqa: BLE001 - Never expose authentication data from backend errors.
         if on_progress is not None:
             on_progress(
+                "tifr VPN: desktop keyring unavailable; saved login could not be accessed."
+            )
+        return None
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L7** — Define the internal read/write/delete primitive with kind, optional value, keyword-only deletion flag and progress callback.
-- **L8** — Document the intended Secret Service storage boundary.
-- **L9** — Import PyGObject only when a keyring operation is actually requested.
-- **L11–L12** — Select and import the libsecret bindings used by the desktop's secret service.
+- **L12** — Define the internal read/write/delete primitive with kind, optional value, keyword-only deletion flag and progress callback.
+- **L13** — Document the intended Secret Service storage boundary.
 - **L14–L21** — Create the existing in.res.tifr.vpn schema with string server/kind attributes. A schema is lookup metadata, not an encryption algorithm or a replacement for a working unlocked desktop keyring.
 - **L22** — Build the exact cache lookup identity: fixed server URL plus session or browser kind.
 - **L23** — Handle errors from keyring operations without exposing their raw secret-bearing exception text. Imports/schema creation above are outside this try block.
 - **L24–L25** — Deletion takes priority when forget=True; return the backend result. False can mean no matching secret, while this helper uses None for a caught backend failure.
 - **L26–L34** — If value is explicitly provided, store it in the default secret collection with the TIFR VPN kind label, then return the backend result. None means no cancellation object.
 - **L35** — Otherwise perform lookup and return the stored string or None when absent.
-- **L36–L38** — On a caught backend exception, optionally emit a generic callback message and return None. Without a callback, this low-level warning is not printed.
+- **L36–L41** — On a caught backend exception, optionally emit a generic callback message and return None. Without a callback, this low-level warning is not printed.
 
-
-#### 13.10.3 L39–L43 · _saved_login · section 2
-
-
-```python
-                "tifr VPN: desktop keyring unavailable; saved login could not be accessed."
-            )
-        return None
-```
-
-**Line-by-line explanation**
-
-- **L39–L41** — On a caught backend exception, optionally emit a generic callback message and return None. Without a callback, this low-level warning is not printed.
-
-
-#### 13.10.4 L44–L47 · load_session
-
+#### 13.10.3 L44–L47 · load_session
 
 ```python
 def load_session(*, on_progress=None):
     return _saved_login("session", on_progress=on_progress)
+
+
 ```
 
 **Line-by-line explanation**
 
 - **L44–L45** — Publicly named helper to load the reusable VPN session cookie under kind=session.
 
-
-#### 13.10.5 L48–L51 · save_session
-
+#### 13.10.4 L48–L51 · save_session
 
 ```python
 def save_session(cookie, *, on_progress=None):
     return _saved_login("session", cookie, on_progress=on_progress)
+
+
 ```
 
 **Line-by-line explanation**
 
 - **L48–L49** — Publicly named helper to store that cookie under kind=session.
 
-
-#### 13.10.6 L52–L55 · load_browser_state
-
+#### 13.10.5 L52–L55 · load_browser_state
 
 ```python
 def load_browser_state(*, on_progress=None):
     return _saved_login("browser", on_progress=on_progress)
+
+
 ```
 
 **Line-by-line explanation**
 
 - **L52–L53** — Load serialized browser-cookie records under the separate kind=browser identity.
 
-
-#### 13.10.7 L56–L59 · save_browser_state
-
+#### 13.10.6 L56–L59 · save_browser_state
 
 ```python
 def save_browser_state(state, *, on_progress=None):
     return _saved_login("browser", state, on_progress=on_progress)
+
+
 ```
 
 **Line-by-line explanation**
 
 - **L56–L57** — Store serialized browser state separately from the direct VPN-session cookie.
 
-
-#### 13.10.8 L60–L68 · clear_saved_login
-
+#### 13.10.7 L60–L68 · clear_saved_login
 
 ```python
 def clear_saved_login():
@@ -2890,6 +2902,8 @@ def clear_saved_login():
     ]
     if any(result is None for result in cleared):
         raise AuthenticationError("could not clear all saved sign-in state.")
+
+
 ```
 
 **Line-by-line explanation**
@@ -2898,9 +2912,7 @@ def clear_saved_login():
 - **L61–L64** — Attempt deletion of both session and browser kinds sequentially, collecting both results even if the first helper returns a failure indication.
 - **L65–L66** — If either result is None, raise a readable failure after both attempts. Ordinary False no-match results are tolerated.
 
-
-#### 13.10.9 L69–L70 · clear_session
-
+#### 13.10.8 L69–L70 · clear_session
 
 ```python
 def clear_session(*, on_progress=None):
@@ -2911,42 +2923,42 @@ def clear_session(*, on_progress=None):
 
 - **L69–L70** — Clear only the stale direct session cookie during a connect retry, preserving browser cookies that might help the next SSO attempt.
 
-
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.11 Package source — src/tifrvpn/networkmanager.py
 
-
-The NetworkManager/OpenConnect backend replaces main’s Zsh nmcli helpers and receives the old Python activate() TLS/descriptor handoff. It runs argv lists directly without shell evaluation, captures output, standardizes locale and turns failure into typed exceptions. Orchestration decides when to call it; CLI presentation decides what to print. Profile name, gateway, nc protocol, not-saved secret flags, certificate verification and memory-backed activation remain intentionally compatible with main.
+The NetworkManager/OpenConnect backend keeps command execution, state queries and verified TLS/secret handoff together. getpass and cryptography imports now live at the top; importing them does not itself start a tunnel or fetch a certificate.
 
 **Relation to main:** [[TIFR Vpn TUI#7.3 tifr-vpn-auth.py|tifr-vpn-auth.py]] — activate retains verified TLS and memfd handoff; profile/state/down helpers are translated from main’s Zsh launcher.
 
 **Functions and their purpose**
 
-- **\_run**, L21–L37: Define a common nmcli runner, with optional progress and forwarded subprocess options such as pass\_fds.
-- **require\_available**, L40–L47: Define explicit runtime/service checks; importing the module alone performs none of them.
-- **profile\_uuid**, L50–L73: Define lookup of the configured profile UUID by its friendly name.
-- **setup\_profile**, L76–L128: Define idempotent profile preparation with optional progress.
-- **state**, L131–L132: Return the current GENERAL.STATE string for one exact UUID. This preserves transitional states for orchestration decisions.
-- **details**, L135–L145: Return selected state/device/IPv4/IPv6 address and DNS detail text for that profile; the library result can retain it while the CLI chooses to display it.
-- **validate\_profile**, L148–L161: Define a defensive configuration check before using the profile for authentication/tunnel setup.
-- **activate**, L164–L214: Intercept the fake activation call, inspect the anonymous descriptor payload and raise the intended fake failure to exercise cleanup.
-- **deactivate**, L217–L218: Deactivate the exact profile through nmcli with a 20-second wait, forwarding optional progress and preserving failure semantics through \_run.
+- **_run**, L25–L41: Define a common nmcli runner, with optional progress and forwarded subprocess options such as pass\_fds.
+- **require_available**, L44–L51: Define explicit runtime/service checks; importing the module alone performs none of them.
+- **profile_uuid**, L54–L77: Define lookup of the configured profile UUID by its friendly name.
+- **setup_profile**, L80–L130: Define idempotent profile preparation with optional progress.
+- **state**, L133–L134: Return the current GENERAL.STATE string for one exact UUID. This preserves transitional states for orchestration decisions.
+- **details**, L137–L147: Return selected state/device/IPv4/IPv6 address and DNS detail text for that profile; the library result can retain it while the CLI chooses to display it.
+- **validate_profile**, L150–L163: Define a defensive configuration check before using the profile for authentication/tunnel setup.
+- **activate**, L166–L213: Intercept the fake activation call, inspect the anonymous descriptor payload and raise the intended fake failure to exercise cleanup.
+- **deactivate**, L216–L217: Deactivate the exact profile through nmcli with a 20-second wait, forwarding optional progress and preserving failure semantics through \_run.
 
-
-#### 13.11.1 L1–L20 · Module documentation, imports and shared definitions
-
+#### 13.11.1 L1–L24 · Module setup and definitions
 
 ```python
 """NetworkManager/OpenConnect backend, using nmcli without shell evaluation."""
 
 import base64
+import getpass
 import hashlib
 import os
 import shutil
 import socket
 import ssl
 import subprocess
+
+from cryptography import x509
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from .config import HOST, URL
 from .errors import NetworkManagerError, ProfileNotFound
@@ -2956,26 +2968,29 @@ VPN_DATA = (
     f"gateway={URL},protocol=nc,prevent_invalid_cert=yes,"
     "cookie-flags=2,gateway-flags=2,gwcert-flags=2,resolve-flags=2"
 )
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L1** — Document this backend's scope and direct argument-list execution. No shell command string is evaluated by these subprocess calls.
-- **L3** — Base64 encodes binary certificate-key fingerprints as text; encoding is not encryption.
-- **L4** — SHA-256 hashes the verified server's public-key bytes.
-- **L5** — Use environment copies, executable access checks and anonymous descriptor operations.
-- **L6** — Find required executable names on PATH.
-- **L7** — Open the gateway TCP connection for verified TLS inspection.
-- **L8** — Create the normal TLS trust/hostname-verification context.
-- **L9** — Run nmcli children and inspect their results.
-- **L11** — Reuse centralized gateway identity constants rather than duplicate URLs throughout the package.
-- **L12** — Use typed backend and recoverable missing-profile errors.
-- **L14** — Keep the saved connection name tifr-ivanti, allowing the new package to find a profile created by main.
-- **L15–L18** — Build the shared plugin-data string: fixed portal, nc protocol, invalid-certificate prevention and flag value 2 for transient cookie/gateway/certificate/resolve secrets. +vpn.data later merges rather than replacing unrelated plugin data.
+- **L1** — Document this module responsibility and when its actual application operations run; this string does not execute those operations.
+- **L3** — Import base64 at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L4** — Import getpass at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L5** — Import hashlib at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L6** — Import os at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L7** — Import shutil at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L8** — Import socket at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L9** — Import ssl at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L10** — Import subprocess at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L12** — Bind x509 from cryptography at module scope. These names are then available to the functions below without a function-local import.
+- **L13** — Bind Encoding, PublicFormat from cryptography.hazmat.primitives.serialization at module scope. These names are then available to the functions below without a function-local import.
+- **L15** — Bind HOST, URL from .config at module scope. These names are then available to the functions below without a function-local import.
+- **L16** — Bind NetworkManagerError, ProfileNotFound from .errors at module scope. These names are then available to the functions below without a function-local import.
+- **L18** — Keep the saved connection name tifr-ivanti, allowing the new package to find a profile created by main.
+- **L19–L22** — Build the shared plugin-data string: fixed portal, nc protocol, invalid-certificate prevention and flag value 2 for transient cookie/gateway/certificate/resolve secrets. +vpn.data later merges rather than replacing unrelated plugin data.
 
-
-#### 13.11.2 L21–L39 · _run
-
+#### 13.11.2 L25–L43 · _run
 
 ```python
 def _run(arguments, *, on_progress=None, **options):
@@ -2995,19 +3010,19 @@ def _run(arguments, *, on_progress=None, **options):
     if on_progress is not None and result.stdout.strip():
         on_progress(result.stdout.rstrip())
     return result.stdout.strip()
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L21** — Define a common nmcli runner, with optional progress and forwarded subprocess options such as pass\_fds.
-- **L22–L29** — Run nmcli plus separately supplied arguments, capture both streams as text, avoid automatic check=True raising and force LC\_ALL=C for stable machine-readable output. \*\*options forwards supported keyword arguments without using a shell.
-- **L30–L34** — On nonzero status, raise NetworkManagerError with stderr or a generic fallback and preserve the exact backend returncode for CLI/library callers.
-- **L35–L36** — Forward nonempty normal output to a supplied callback after the command completes. Raw detail-returning calls normally omit that callback.
-- **L37** — Return trimmed stdout as data to the caller.
+- **L25** — Define a common nmcli runner, with optional progress and forwarded subprocess options such as pass\_fds.
+- **L26–L33** — Run nmcli plus separately supplied arguments, capture both streams as text, avoid automatic check=True raising and force LC\_ALL=C for stable machine-readable output. \*\*options forwards supported keyword arguments without using a shell.
+- **L34–L38** — On nonzero status, raise NetworkManagerError with stderr or a generic fallback and preserve the exact backend returncode for CLI/library callers.
+- **L39–L40** — Forward nonempty normal output to a supplied callback after the command completes. Raw detail-returning calls normally omit that callback.
+- **L41** — Return trimmed stdout as data to the caller.
 
-
-#### 13.11.3 L40–L49 · require_available
-
+#### 13.11.3 L44–L53 · require_available
 
 ```python
 def require_available():
@@ -3018,17 +3033,17 @@ def require_available():
             "Install dependencies listed in README.md (NetworkManager-openconnect, OpenConnect and system Python bindings)."
         )
     _run(["general", "status"])
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L40** — Define explicit runtime/service checks; importing the module alone performs none of them.
-- **L41–L46** — Require nmcli, openconnect and python3 plus executable access to the hardcoded nm-openconnect-service path. Missing tools trigger the readable dependency error; this remains distribution-layout-specific despite the package refactor.
-- **L47** — Check that NetworkManager responds using the common runner, discarding its returned normal status text at this call site.
+- **L44** — Define explicit runtime/service checks; importing the module alone performs none of them.
+- **L45–L50** — Require nmcli, openconnect and python3 plus executable access to the hardcoded nm-openconnect-service path. Missing tools trigger the readable dependency error; this remains distribution-layout-specific despite the package refactor.
+- **L51** — Check that NetworkManager responds using the common runner, discarding its returned normal status text at this call site.
 
-
-#### 13.11.4 L50–L75 · profile_uuid
-
+#### 13.11.4 L54–L79 · profile_uuid
 
 ```python
 def profile_uuid():
@@ -3055,20 +3070,20 @@ def profile_uuid():
             "expected one NetworkManager profile named tifr-ivanti."
         )
     return uuid
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L50** — Define lookup of the configured profile UUID by its friendly name.
-- **L51–L65** — Call nmcli for only connection.uuid on tifr-ivanti, capturing text under a fixed locale. This uses a direct subprocess call because its nonzero/empty result has a special recoverable meaning here.
-- **L66–L67** — Treat failed/empty lookup as ProfileNotFound. A later setup lookup additionally checks existing names before creating a profile, rather than trusting every failure as absence.
-- **L68** — Trim trailing whitespace from the returned UUID text.
-- **L69–L72** — Reject multiline UUID output as ambiguous profile names with a general NetworkManagerError, preventing accidental duplicate creation.
-- **L73** — Return the unique identifier.
+- **L54** — Define lookup of the configured profile UUID by its friendly name.
+- **L55–L69** — Call nmcli for only connection.uuid on tifr-ivanti, capturing text under a fixed locale. This uses a direct subprocess call because its nonzero/empty result has a special recoverable meaning here.
+- **L70–L71** — Treat failed/empty lookup as ProfileNotFound. A later setup lookup additionally checks existing names before creating a profile, rather than trusting every failure as absence.
+- **L72** — Trim trailing whitespace from the returned UUID text.
+- **L73–L76** — Reject multiline UUID output as ambiguous profile names with a general NetworkManagerError, preventing accidental duplicate creation.
+- **L77** — Return the unique identifier.
 
-
-#### 13.11.5 L76–L107 · setup_profile · section 1
-
+#### 13.11.5 L80–L111 · setup_profile
 
 ```python
 def setup_profile(*, on_progress=None):
@@ -3081,8 +3096,6 @@ def setup_profile(*, on_progress=None):
             raise NetworkManagerError(
                 "ambiguous tifr-ivanti profile; resolve duplicate names before setup."
             ) from None
-        import getpass
-
         _run(
             [
                 "connection",
@@ -3103,25 +3116,23 @@ def setup_profile(*, on_progress=None):
             on_progress=on_progress,
         )
         return profile_uuid()
+    service = _run(
+        ["--get-values", "vpn.service-type", "connection", "show", "uuid", uuid]
 ```
 
 **Line-by-line explanation**
 
-- **L76** — Define idempotent profile preparation with optional progress.
-- **L77** — Check prerequisites/service availability before profile modifications.
-- **L78–L79** — Attempt existing-profile lookup.
-- **L80–L85** — When that lookup reports missing, list all names and reject a name already present; this prevents blindly creating another tifr-ivanti after an ambiguous lookup/failure.
-- **L86** — Import getpass for the invoking user's account name without launching the shell's id command.
-- **L88–L106** — Create a user-restricted OpenConnect VPN profile named tifr-ivanti, with autoconnect disabled and the shared VPN\_DATA settings. Each list element is one nmcli argument; values containing spaces stay intact.
-- **L107** — After successful creation, query and return the actual generated UUID.
+- **L80** — Define idempotent profile preparation with optional progress.
+- **L81** — Check prerequisites/service availability before profile modifications.
+- **L82–L83** — Attempt existing-profile lookup.
+- **L84–L89** — When that lookup reports missing, list all names and reject a name already present; this prevents blindly creating another tifr-ivanti after an ambiguous lookup/failure.
+- **L90–L108** — Create a user-restricted OpenConnect VPN profile named tifr-ivanti, with autoconnect disabled and the shared VPN\_DATA settings. Each list element is one nmcli argument; values containing spaces stay intact.
+- **L109** — After successful creation, query and return the actual generated UUID.
+- **L110–L111** — For an existing profile, query its vpn.service-type.
 
-
-#### 13.11.6 L108–L130 · setup_profile · section 2
-
+#### 13.11.6 L112–L132 · setup_profile
 
 ```python
-    service = _run(
-        ["--get-values", "vpn.service-type", "connection", "show", "uuid", uuid]
     )
     if service != "org.freedesktop.NetworkManager.openconnect":
         raise NetworkManagerError(
@@ -3141,31 +3152,31 @@ def setup_profile(*, on_progress=None):
         on_progress=on_progress,
     )
     return uuid
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L108–L110** — For an existing profile, query its vpn.service-type.
-- **L111–L114** — Refuse to rewrite a same-name profile using another VPN plugin; ask the user to resolve the naming conflict.
-- **L115–L127** — Update the existing exact UUID, disable autoconnect and merge the intended plugin settings, forwarding safe command progress to the optional callback.
-- **L128** — Return the existing profile UUID after successful update.
+- **L112** — For an existing profile, query its vpn.service-type.
+- **L113–L116** — Refuse to rewrite a same-name profile using another VPN plugin; ask the user to resolve the naming conflict.
+- **L117–L129** — Update the existing exact UUID, disable autoconnect and merge the intended plugin settings, forwarding safe command progress to the optional callback.
+- **L130** — Return the existing profile UUID after successful update.
 
-
-#### 13.11.7 L131–L134 · state
-
+#### 13.11.7 L133–L136 · state
 
 ```python
 def state(uuid):
     return _run(["--get-values", "GENERAL.STATE", "connection", "show", "uuid", uuid])
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L131–L132** — Return the current GENERAL.STATE string for one exact UUID. This preserves transitional states for orchestration decisions.
+- **L133–L134** — Return the current GENERAL.STATE string for one exact UUID. This preserves transitional states for orchestration decisions.
 
-
-#### 13.11.8 L135–L147 · details
-
+#### 13.11.8 L137–L149 · details
 
 ```python
 def details(uuid):
@@ -3179,15 +3190,15 @@ def details(uuid):
             uuid,
         ]
     )
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L135–L145** — Return selected state/device/IPv4/IPv6 address and DNS detail text for that profile; the library result can retain it while the CLI chooses to display it.
+- **L137–L147** — Return selected state/device/IPv4/IPv6 address and DNS detail text for that profile; the library result can retain it while the CLI chooses to display it.
 
-
-#### 13.11.9 L148–L163 · validate_profile
-
+#### 13.11.9 L150–L165 · validate_profile
 
 ```python
 def validate_profile(uuid):
@@ -3204,25 +3215,22 @@ def validate_profile(uuid):
         or settings.get("protocol") != "nc"
     ):
         raise NetworkManagerError("Profile settings differ; run tifrvpn --setup.")
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L148** — Define a defensive configuration check before using the profile for authentication/tunnel setup.
-- **L149** — Read its backend service identifier.
-- **L150–L152** — Read unescaped vpn.data text for expected key/value parsing.
-- **L153–L155** — Build a dictionary by splitting comma-delimited items and each first ' = ' separator. This parser expects nmcli's current representation for these particular fields.
-- **L156–L161** — Require the OpenConnect service, exact fixed gateway URL and nc protocol. Otherwise raise a setup instruction instead of handing session data to an unexpected profile.
+- **L150** — Define a defensive configuration check before using the profile for authentication/tunnel setup.
+- **L151** — Read its backend service identifier.
+- **L152–L154** — Read unescaped vpn.data text for expected key/value parsing.
+- **L155–L157** — Build a dictionary by splitting comma-delimited items and each first ' = ' separator. This parser expects nmcli's current representation for these particular fields.
+- **L158–L163** — Require the OpenConnect service, exact fixed gateway URL and nc protocol. Otherwise raise a setup instruction instead of handing session data to an unexpected profile.
 
-
-#### 13.11.10 L164–L195 · activate · section 1
-
+#### 13.11.10 L166–L197 · activate
 
 ```python
 def activate(uuid, cookie, *, on_progress=None):
-    from cryptography import x509
-    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
-
     # Verify the gateway with the system trust store before pinning this session.
     context = ssl.create_default_context()
     with (
@@ -3251,32 +3259,31 @@ def activate(uuid, cookie, *, on_progress=None):
                     f"vpn.secrets.{key}:{value}\n" for key, value in secrets.items()
                 )
             )
+        os.lseek(fd, 0, os.SEEK_SET)
+        if on_progress is not None:
+            on_progress("tifr VPN: starting NetworkManager tunnel")
 ```
 
 **Line-by-line explanation**
 
-- **L164** — Define tunnel activation with the profile UUID, accepted cookie and optional progress callback.
-- **L165–L166** — Import certificate parsing/serialization libraries only during actual activation, preserving safe import without optional cryptography support.
-- **L168–L169** — Create a default certificate-verifying TLS context before deriving any public-key pin.
-- **L170–L173** — Open a gateway TCP connection with a 15-second socket timeout and wrap it in hostname-verified TLS; the combined with statement closes both resources on exit.
-- **L174–L176** — Read the binary DER peer certificate, parse it and extract the public key.
-- **L177** — Serialize the key as DER SubjectPublicKeyInfo, the bytes to fingerprint for the OpenConnect pin.
-- **L178–L180** — SHA-256 hash the key, Base64-encode the digest and prefix pin-sha256:. Normal trust verification happened first, so this is not an untrusted first-contact acceptance scheme.
-- **L181** — Retain the actual gateway IP used by that verified connection.
-- **L182–L187** — Assemble transient secrets: cookie, gateway origin, verified key pin and hostname-to-verified-IP resolve override. These values remain data and do not become command-line arguments.
-- **L188** — Create the Linux anonymous memory-backed file descriptor with close-on-exec protection; pass\_fds below deliberately allows only this handle into nmcli. This avoids a named plaintext password file but does not guarantee immunity from swap/dumps/privileged inspection.
-- **L189** — Ensure the original descriptor is always closed after activation or failure.
-- **L190** — Duplicate the descriptor and open the duplicate as a text stream so writing/closing the stream leaves the original handle available for the child.
-- **L191–L195** — Write one vpn.secrets.key:value newline-delimited record per secret. ''.join builds the payload in memory; none is printed to the terminal here.
+- **L166** — Define tunnel activation with the profile UUID, accepted cookie and optional progress callback.
+- **L167–L168** — Create a default certificate-verifying TLS context before deriving any public-key pin.
+- **L169–L172** — Open a gateway TCP connection with a 15-second socket timeout and wrap it in hostname-verified TLS; the combined with statement closes both resources on exit.
+- **L173–L175** — Read the binary DER peer certificate, parse it and extract the public key.
+- **L176** — Serialize the key as DER SubjectPublicKeyInfo, the bytes to fingerprint for the OpenConnect pin.
+- **L177–L179** — SHA-256 hash the key, Base64-encode the digest and prefix pin-sha256:. Normal trust verification happened first, so this is not an untrusted first-contact acceptance scheme.
+- **L180** — Retain the actual gateway IP used by that verified connection.
+- **L181–L186** — Assemble transient secrets: cookie, gateway origin, verified key pin and hostname-to-verified-IP resolve override. These values remain data and do not become command-line arguments.
+- **L187** — Create the Linux anonymous memory-backed file descriptor with close-on-exec protection; pass\_fds below deliberately allows only this handle into nmcli. This avoids a named plaintext password file but does not guarantee immunity from swap/dumps/privileged inspection.
+- **L188** — Ensure the original descriptor is always closed after activation or failure.
+- **L189** — Duplicate the descriptor and open the duplicate as a text stream so writing/closing the stream leaves the original handle available for the child.
+- **L190–L194** — Write one vpn.secrets.key:value newline-delimited record per secret. ''.join builds the payload in memory; none is printed to the terminal here.
+- **L195** — Rewind to byte zero before the nmcli child reads the shared file resource.
+- **L196–L197** — Report tunnel startup only through the supplied progress callback.
 
-
-#### 13.11.11 L196–L216 · activate · section 2
-
+#### 13.11.11 L198–L215 · activate
 
 ```python
-        os.lseek(fd, 0, os.SEEK_SET)
-        if on_progress is not None:
-            on_progress("tifr VPN: starting NetworkManager tunnel")
         _run(
             [
                 "--wait",
@@ -3293,18 +3300,16 @@ def activate(uuid, cookie, *, on_progress=None):
         )
     finally:
         os.close(fd)
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L196** — Rewind to byte zero before the nmcli child reads the shared file resource.
-- **L197–L198** — Report tunnel startup only through the supplied progress callback.
-- **L199–L212** — Activate the exact profile with nmcli --wait 90 connection up, point passwd-file to /proc/self/fd/N and explicitly inherit fd via pass\_fds. In the child, self means nmcli's own process. The common runner preserves command failures.
-- **L213–L214** — Close the original anonymous descriptor in a finally block even when certificate handoff or activation raises an error.
+- **L198–L211** — Activate the exact profile with nmcli --wait 90 connection up, point passwd-file to /proc/self/fd/N and explicitly inherit fd via pass\_fds. In the child, self means nmcli's own process. The common runner preserves command failures.
+- **L212–L213** — Close the original anonymous descriptor in a finally block even when certificate handoff or activation raises an error.
 
-
-#### 13.11.12 L217–L218 · deactivate
-
+#### 13.11.12 L216–L217 · deactivate
 
 ```python
 def deactivate(uuid, *, on_progress=None):
@@ -3313,28 +3318,24 @@ def deactivate(uuid, *, on_progress=None):
 
 **Line-by-line explanation**
 
-- **L217–L218** — Deactivate the exact profile through nmcli with a 20-second wait, forwarding optional progress and preserving failure semantics through \_run.
+- **L216–L217** — Deactivate the exact profile through nmcli with a 20-second wait, forwarding optional progress and preserving failure semantics through \_run.
 
-
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.12 Package source — src/tifrvpn/totp.py
 
-
-Pure-data QR migration parsing and TOTP calculation moved out of main’s combined QR/Qt script. These functions need no camera, Qt, NumPy or network to operate on supplied data. _fields is now explicitly internal by naming convention. decode_export interprets one migration account; current_code calculates codes and supports a fixed timestamp for reproducible tests. The bit operations and algorithm are unchanged in intent from the original guide.
+Decode serialized Google Authenticator exports and calculate TOTP from validated account data. The parser explicitly describes integer-or-bytes fields; the decoder checks each field before comparisons, decoding or dictionary indexing. Two narrow TRY004 comments preserve ValueError for malformed serialized contents. Section 15 explains the representations and checks in order.
 
 **Relation to main:** [[TIFR Vpn TUI#7.5 tifr-import-totp.py|tifr-import-totp.py]] — fields is renamed _fields; decode_export/current_code move into a pure-data algorithm module.
 
 **Functions and their purpose**
 
-- **\_fields**, L11–L42: Rename the old fields generator to \_fields to mark the low-level binary parser as internal. It still yields numbered protobuf wire values for the export decoder.
-- **\_fields.varint**, L14–L25: Define a nested reader for a variable-length unsigned integer, called a varint.
-- **decode\_export**, L45–L87: Define the public pure-data migration decoder, accepting supplied QR text without opening a camera or fetching any network resource.
-- **current\_code**, L90–L99: Define current-code calculation; timestamp=None uses the real clock while tests can provide a fixed Unix timestamp.
+- **_fields**, L12–L44: Yield integer field numbers paired with integer-or-bytes values, rejecting unsupported or truncated wire data.
+- **_fields.varint**, L15–L26: Read one bounded variable-length integer and advance the enclosing byte offset.
+- **decode_export**, L47–L102: Validate migration URL data and supported single-account fields, then return decoded setup data.
+- **current_code**, L105–L114: Define current-code calculation; timestamp=None uses the real clock while tests can provide a fixed Unix timestamp.
 
-
-#### 13.12.1 L1–L10 · Module documentation, imports and shared definitions
-
+#### 13.12.1 L1–L11 · Module setup and definitions
 
 ```python
 """Decode a single-account Google Authenticator export and calculate TOTP."""
@@ -3344,39 +3345,40 @@ import hashlib
 import hmac
 import struct
 import time
+from collections.abc import Iterator
 from urllib.parse import parse_qs, urlsplit
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L1** — Describe the pure migration-decoding and TOTP-calculation responsibility.
-- **L3** — base64 converts the migration URL's Base64 payload and the seed's Base32 representation. Neither encoding encrypts the seed.
-- **L4** — hashlib supplies SHA1/SHA256/SHA512 hash functions used by TOTP.
-- **L5** — hmac provides the keyed hash operation used by HOTP/TOTP.
-- **L6** — struct packs the time counter into an exact binary representation.
-- **L7** — time supplies Unix time for TOTP and a monotonic clock for scan throttling.
-- **L8** — urlsplit parses the QR's URI; parse\_qs decodes its query parameters.
+- **L1** — Document this module responsibility and when its actual application operations run; this string does not execute those operations.
+- **L3** — Import base64 at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L4** — Import hashlib at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L5** — Import hmac at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L6** — Import struct at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L7** — Import time at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L8** — Bind Iterator from collections.abc at module scope. These names are then available to the functions below without a function-local import.
+- **L9** — Bind parse_qs, urlsplit from urllib.parse at module scope. These names are then available to the functions below without a function-local import.
 
-
-#### 13.12.2 L11–L13 · _fields
-
+#### 13.12.2 L12–L14 · _fields
 
 ```python
-def _fields(data):
+def _fields(data: bytes) -> Iterator[tuple[int, int | bytes]]:
     offset = 0
+
 ```
 
 **Line-by-line explanation**
 
-- **L11** — Rename the old fields generator to \_fields to mark the low-level binary parser as internal. It still yields numbered protobuf wire values for the export decoder.
-- **L12** — Start the byte-reading position at 0.
+- **L12** — Define a byte-input parser yielding pairs: an integer field number and a value that can be either an integer or bytes. The vertical bar means either type is possible.
+- **L13** — Start the byte-reading position at 0.
 
-
-#### 13.12.3 L14–L44 · _fields.varint
-
+#### 13.12.3 L15–L46 · _fields.varint
 
 ```python
-    def varint():
+    def varint() -> int:
         nonlocal offset
         value = 0
         for shift in range(0, 70, 7):
@@ -3389,6 +3391,7 @@ def _fields(data):
                 return value
         raise ValueError("Invalid export QR.")
 
+    value: int | bytes
     while offset < len(data):
         tag = varint()
         number, wire = tag >> 3, tag & 7
@@ -3405,45 +3408,46 @@ def _fields(data):
         else:
             raise ValueError("Unsupported export QR format.")
         yield number, value
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L14** — Define a nested reader for a variable-length unsigned integer, called a varint.
-- **L15** — nonlocal offset means assignments update the containing fields function's position instead of creating a new local position inside varint.
-- **L16** — Initialize the varint accumulator to integer zero before combining seven-bit payload groups.
-- **L17** — Read up to ten 7-bit groups, shifting by 0, 7, 14, ... 63 bits. This bounds parsing effort for a malformed endless integer.
-- **L18** — Before accessing a byte, check that input remains.
-- **L19** — Fail clearly if the integer extends beyond the supplied bytes.
-- **L20** — Read one byte as an integer from 0 to 255.
-- **L21** — Advance to the next byte.
-- **L22** — Keep the byte's lower seven bits with &127, shift them into position with <<shift, and combine them with the current value using |=. These are bit operations on binary digits.
-- **L23** — The upper bit, value 128, indicates that another varint byte follows. If it is absent, this integer is complete. 'not byte & 128' is evaluated as not (byte & 128).
-- **L24** — Return the decoded integer, preserving the updated enclosing offset.
-- **L25** — If ten groups never completed the integer, reject the encoding rather than looping forever.
-- **L27** — Continue reading fields while unconsumed bytes remain.
-- **L28** — Read the field tag as a varint.
-- **L29** — The tag's upper bits encode the field number (>>3); its low three bits encode the wire type (&7). Python can assign both extracted values at once.
-- **L30** — Protobuf field number 0 is invalid.
-- **L31** — Reject that malformed tag.
-- **L32** — Wire type 0 means the field value is another varint.
-- **L33** — Decode that numeric value with the nested helper.
-- **L34** — Handle fixed-width 64-bit fields (wire 1), length-delimited fields (wire 2), and fixed-width 32-bit fields (wire 5).
-- **L35** — For wire 2, read the byte length; for fixed widths use 8 or 4 bytes. This line contains nested conditional expressions.
-- **L36** — Check that the requested byte count fits the remaining input.
-- **L37** — Reject truncated field data before slicing it.
-- **L38** — Slice exactly the declared field byte count. Added formatting spaces around ':' do not change slice behavior; the stop index remains excluded.
-- **L39** — Advance the current reading position by that many bytes.
-- **L40** — An unsupported protobuf wire type takes the rejection branch rather than attempting an unsafe guessed parse.
-- **L41** — Report the unsupported format.
-- **L42** — yield returns one field pair to the caller and suspends this generator; iteration later resumes at the next field.
+- **L15** — Define the nested variable-length-integer reader and state that successful calls return an int.
+- **L16** — nonlocal offset means assignments update the containing fields function's position instead of creating a new local position inside varint.
+- **L17** — Initialize the varint accumulator to integer zero before combining seven-bit payload groups.
+- **L18** — Read up to ten 7-bit groups, shifting by 0, 7, 14, ... 63 bits. This bounds parsing effort for a malformed endless integer.
+- **L19** — Before accessing a byte, check that input remains.
+- **L20** — Fail clearly if the integer extends beyond the supplied bytes.
+- **L21** — Read one byte as an integer from 0 to 255.
+- **L22** — Advance to the next byte.
+- **L23** — Keep the byte's lower seven bits with &127, shift them into position with <<shift, and combine them with the current value using |=. These are bit operations on binary digits.
+- **L24** — The upper bit, value 128, indicates that another varint byte follows. If it is absent, this integer is complete. 'not byte & 128' is evaluated as not (byte & 128).
+- **L25** — Return the decoded integer, preserving the updated enclosing offset.
+- **L26** — If ten groups never completed the integer, reject the encoding rather than looping forever.
+- **L28** — Allow the local value variable to hold an integer in one wire-format branch or bytes in another. The annotation describes the existing two possible representations.
+- **L29** — Continue reading fields while unconsumed bytes remain.
+- **L30** — Read the field tag as a varint.
+- **L31** — The tag's upper bits encode the field number (>>3); its low three bits encode the wire type (&7). Python can assign both extracted values at once.
+- **L32** — Protobuf field number 0 is invalid.
+- **L33** — Reject that malformed tag.
+- **L34** — Wire type 0 means the field value is another varint.
+- **L35** — Decode that numeric value with the nested helper.
+- **L36** — Handle fixed-width 64-bit fields (wire 1), length-delimited fields (wire 2), and fixed-width 32-bit fields (wire 5).
+- **L37** — For wire 2, read the byte length; for fixed widths use 8 or 4 bytes. This line contains nested conditional expressions.
+- **L38** — Check that the requested byte count fits the remaining input.
+- **L39** — Reject truncated field data before slicing it.
+- **L40** — Slice exactly the declared field byte count. Added formatting spaces around ':' do not change slice behavior; the stop index remains excluded.
+- **L41** — Advance the current reading position by that many bytes.
+- **L42** — An unsupported protobuf wire type takes the rejection branch rather than attempting an unsafe guessed parse.
+- **L43** — Report the unsupported format.
+- **L44** — yield returns one field pair to the caller and suspends this generator; iteration later resumes at the next field.
 
-
-#### 13.12.4 L45–L76 · decode_export · section 1
-
+#### 13.12.4 L47–L78 · decode_export
 
 ```python
-def decode_export(text):
+def decode_export(text: str):
     uri = urlsplit(text)
     if uri.scheme != "otpauth-migration" or uri.netloc != "offline":
         raise ValueError(
@@ -3462,76 +3466,105 @@ def decode_export(text):
         raise ValueError("Could not decode this export QR.") from None
     accounts = [value for number, value in payload if number == 1]
     if len(accounts) != 1 or any(
-        number == 3 and value > 1 for number, value in payload
+        number == 3 and (not isinstance(value, int) or value > 1)
+        for number, value in payload
     ):
         raise ValueError("Export only the TIFR entry, then scan the new QR.")
-    account = dict(_fields(accounts[0]))
-    if not isinstance(account.get(1), bytes) or not account[1]:
+    account_data = accounts[0]
+    if not isinstance(account_data, bytes):
+        raise ValueError("Invalid export QR.")  # noqa: TRY004 - Malformed QR data.
+    account = dict(_fields(account_data))
+    secret = account.get(1)
+    if not isinstance(secret, bytes) or not secret:
         raise ValueError("The export contains no setup key.")
-    algorithms = {1: "SHA1", 2: "SHA256", 3: "SHA512"}
-    digits = {1: 6, 2: 8}
-    if (
-        account.get(6) != 2
-        or account.get(4) not in algorithms
-        or account.get(5) not in digits
-    ):
+    name = account.get(2, b"")
+    issuer = account.get(3, b"")
 ```
 
 **Line-by-line explanation**
 
-- **L45** — Define the public pure-data migration decoder, accepting supplied QR text without opening a camera or fetching any network resource.
-- **L46** — Split the URI into its parts without making any network request.
-- **L47** — Require the migration URI scheme and the offline authority name. Despite looking like a URL, this payload is treated as local data here.
-- **L48–L50** — Reject a URI whose scheme/authority is not the supported offline Google Authenticator migration export.
-- **L51** — Get the first data query value, defaulting to empty text. parse\_qs normally treats + as spaces, so replace spaces with + before decoding this Base64 payload.
-- **L52** — Reject an empty payload or one longer than 32,000 encoded characters to bound input size.
-- **L53** — Raise a format error for that invalid size/content condition.
-- **L54** — Guard Base64 decoding and binary-field parsing so malformed export bytes receive a safe ValueError.
-- **L55–L59** — Base64-decode the validated payload with restored padding, feed it to the internal field generator and collect its decoded field pairs.
-- **L60–L61** — Convert any ordinary parsing/backend exception into a generic ValueError without revealing raw export data or chained internals. The noqa comment suppresses a linter warning for this deliberate broad catch; it does not execute.
-- **L62** — Collect field-1 values, which this migration format uses for account messages.
-- **L63–L65** — Require exactly one account and no batch-size greater than one, avoiding incomplete/multi-account imports.
-- **L66** — Ask the user to export only the TIFR entry.
-- **L67** — Parse the sole embedded account as field-number/value pairs and form a dictionary.
-- **L68** — Require field 1 to contain a nonempty bytes object, the raw shared secret.
-- **L69** — Reject an account without a usable seed.
-- **L70** — Map the migration format's algorithm enumeration numbers to hash names.
-- **L71** — Map its digit enumeration numbers to six or eight displayed digits.
-- **L72–L76** — Require TOTP type enum 2 and supported hash/digit enum values before normalizing the account.
+- **L47** — Accept QR URL text; subsequent validation turns its encoded contents into one supported account dictionary.
+- **L48** — Split the URI into its parts without making any network request.
+- **L49** — Require the migration URI scheme and the offline authority name. Despite looking like a URL, this payload is treated as local data here.
+- **L50–L52** — Reject a URI whose scheme/authority is not the supported offline Google Authenticator migration export.
+- **L53** — Get the first data query value, defaulting to empty text. parse\_qs normally treats + as spaces, so replace spaces with + before decoding this Base64 payload.
+- **L54** — Reject an empty payload or one longer than 32,000 encoded characters to bound input size.
+- **L55** — Raise a format error for that invalid size/content condition.
+- **L56** — Guard Base64 decoding and binary-field parsing so malformed export bytes receive a safe ValueError.
+- **L57–L61** — Base64-decode the validated payload with restored padding, feed it to the internal field generator and collect its decoded field pairs.
+- **L62–L63** — Convert any ordinary parsing/backend exception into a generic ValueError without revealing raw export data or chained internals. The noqa comment suppresses a linter warning for this deliberate broad catch; it does not execute.
+- **L64** — Collect field-1 values, which this migration format uses for account messages.
+- **L65** — Require exactly one account and no batch-size greater than one, avoiding incomplete/multi-account imports.
+- **L66** — For an outer batch-size field, reject a noninteger value or an integer greater than one. Short-circuit or prevents comparing bytes to a number.
+- **L67** — Perform that batch-size check for each parsed outer field; this line completes the any(...) generator.
+- **L68** — Require exactly one account and no batch-size greater than one, avoiding incomplete/multi-account imports.
+- **L69** — Ask the user to export only the TIFR entry.
+- **L70** — Take the sole account payload after the preceding exactly-one-account check.
+- **L71** — Require serialized account contents to be bytes before passing them into the byte parser.
+- **L72** — Report malformed QR contents as ValueError. Suppress only Ruff TRY004 on this line because the invalid type is inside serialized data, not the public text argument.
+- **L73** — Parse the nested account bytes into a dictionary keyed by numeric field identifiers.
+- **L74** — Read field 1 into one stable local variable so both the runtime check and type checker reason about the same value.
+- **L75** — Require a nonempty byte sequence for the authenticator seed. Either a wrong type or empty bytes is invalid.
+- **L76** — Reject an account without a usable seed.
+- **L77** — Read the optional account-name bytes; use empty bytes if the field is absent.
+- **L78** — Read optional issuer bytes; use empty bytes if that field is absent.
 
-
-#### 13.12.5 L77–L89 · decode_export · section 2
-
+#### 13.12.5 L79–L104 · decode_export
 
 ```python
+    if not isinstance(name, bytes) or not isinstance(issuer, bytes):
+        raise ValueError("Invalid export QR.")  # noqa: TRY004 - Malformed QR data.
+    algorithms = {1: "SHA1", 2: "SHA256", 3: "SHA512"}
+    digits = {1: 6, 2: 8}
+    algorithm = account.get(4)
+    digit_format = account.get(5)
+    if (
+        account.get(6) != 2
+        or not isinstance(algorithm, int)
+        or algorithm not in algorithms
+        or not isinstance(digit_format, int)
+        or digit_format not in digits
+    ):
         raise ValueError(
             "This export is not a supported time-based authenticator entry."
         )
     return {
-        "secret": base64.b32encode(account[1]).decode().rstrip("="),
-        "name": account.get(2, b"").decode("utf-8"),
-        "issuer": account.get(3, b"").decode("utf-8"),
-        "algorithm": algorithms[account[4]],
-        "digits": digits[account[5]],
+        "secret": base64.b32encode(secret).decode().rstrip("="),
+        "name": name.decode("utf-8"),
+        "issuer": issuer.decode("utf-8"),
+        "algorithm": algorithms[algorithm],
+        "digits": digits[digit_format],
         "period": 30,
     }
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L77–L79** — Explain unsupported authenticator settings using a safe ValueError.
-- **L80** — Begin the normalized account dictionary returned as pure data to a caller, containing seed, labels and compatible algorithm settings.
-- **L81** — Encode the binary seed using Base32, convert to text and remove '=' padding for display/pasting. Anyone holding this setup seed can derive future codes; it is much more sensitive than one short-lived code.
-- **L82** — Decode the optional account name as UTF-8, falling back to empty bytes if missing.
-- **L83** — Decode the optional issuer label similarly.
-- **L84** — Normalize the algorithm enumeration to a supported hash-name string.
-- **L85** — Normalize the digit-count enumeration to 6 or 8.
-- **L86** — Assume the migration account's time period is 30 seconds in this implementation.
-- **L87** — Close that account dictionary and return it; it contains a long-term secret and is not printed by decode\_export.
+- **L79** — Require both text fields to be encoded bytes before calling their decode methods later.
+- **L80** — Use the same malformed-data ValueError convention; the narrow TRY004 comment preserves validation and explains the linter exception.
+- **L81** — Map the migration format's algorithm enumeration numbers to hash names.
+- **L82** — Map its digit enumeration numbers to six or eight displayed digits.
+- **L83** — Read the algorithm identifier once before validating it.
+- **L84** — Read the digit-format identifier once. This numeric enum will be translated to a digit count rather than used directly as the count.
+- **L85–L86** — Require TOTP type enum 2 and supported hash/digit enum values before normalizing the account.
+- **L87** — Require an integer algorithm identifier before using it to look up a supported algorithm name.
+- **L88** — Require that integer to exist in the supported algorithm map.
+- **L89** — Require an integer digit-format identifier before using it as a digit-map key.
+- **L90** — Require that digit-format identifier to be supported: 1 maps to six digits and 2 maps to eight.
+- **L91** — Require TOTP type enum 2 and supported hash/digit enum values before normalizing the account.
+- **L92–L94** — Explain unsupported authenticator settings using a safe ValueError.
+- **L95** — Begin the normalized account dictionary returned as pure data to a caller, containing seed, labels and compatible algorithm settings.
+- **L96** — Encode the validated seed bytes as Base32 text and remove padding for the displayed setup key. Encoding does not encrypt the seed.
+- **L97** — Decode the validated account-name bytes as UTF-8 text.
+- **L98** — Decode the validated issuer bytes as UTF-8 text.
+- **L99** — Translate the checked algorithm identifier to SHA1, SHA256 or SHA512.
+- **L100** — Translate the checked digit-format identifier into the actual displayed digit count.
+- **L101** — Assume the migration account's time period is 30 seconds in this implementation.
+- **L102** — Close that account dictionary and return it; it contains a long-term secret and is not printed by decode\_export.
 
-
-#### 13.12.6 L90–L99 · current_code
-
+#### 13.12.6 L105–L114 · current_code
 
 ```python
 def current_code(account, timestamp=None):
@@ -3548,17 +3581,16 @@ def current_code(account, timestamp=None):
 
 **Line-by-line explanation**
 
-- **L90** — Define current-code calculation; timestamp=None uses the real clock while tests can provide a fixed Unix timestamp.
-- **L91** — Get the Base32 seed text from the normalized account.
-- **L92** — Restore padding to a multiple of 8 characters and decode the text back to raw key bytes.
-- **L93** — Choose current/specified Unix time, convert to whole seconds and integer-divide by the period. // is floor division. Every instant in the same time window produces the same counter.
-- **L94–L96** — HMAC the big-endian 8-byte time counter using the account's decoded seed and selected hashlib hash function, then obtain raw digest bytes.
-- **L97** — Use the low four bits of the final digest byte to select an offset from 0 to 15, the HOTP dynamic-truncation step.
-- **L98** — Read four digest bytes at the dynamic offset in big-endian order and clear the sign bit with 0x7FFFFFFF, yielding the same nonnegative 31-bit value as before.
-- **L99** — Reduce the number modulo 10 raised to the number of digits, convert to text and pad leading zeros. For example, a 6-digit numeric value 123 must display as 000123. These steps implement the time-based algorithm tested against RFC 6238.
+- **L105** — Define current-code calculation; timestamp=None uses the real clock while tests can provide a fixed Unix timestamp.
+- **L106** — Get the Base32 seed text from the normalized account.
+- **L107** — Restore padding to a multiple of 8 characters and decode the text back to raw key bytes.
+- **L108** — Choose current/specified Unix time, convert to whole seconds and integer-divide by the period. // is floor division. Every instant in the same time window produces the same counter.
+- **L109–L111** — HMAC the big-endian 8-byte time counter using the account's decoded seed and selected hashlib hash function, then obtain raw digest bytes.
+- **L112** — Use the low four bits of the final digest byte to select an offset from 0 to 15, the HOTP dynamic-truncation step.
+- **L113** — Read four digest bytes at the dynamic offset in big-endian order and clear the sign bit with 0x7FFFFFFF, yielding the same nonnegative 31-bit value as before.
+- **L114** — Reduce the number modulo 10 raised to the number of digits, convert to text and pad leading zeros. For example, a 6-digit numeric value 123 must display as 000123. These steps implement the time-based algorithm tested against RFC 6238.
 
-
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.13 Package source — src/tifrvpn/gui/__init__.py
 
@@ -3578,42 +3610,40 @@ Marks the optional GUI subpackage. Its actual implementations import heavy toolk
 - **L1** — Package docstring: this directory groups optional windows, and importing the package itself starts none of them.
 
 
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.14 Package source — src/tifrvpn/gui/credential_setup.py
 
-
-Qt password-collection dialogs were split from the non-GUI GPG/ciphertext writing operations. The function collects and locally verifies the KeePass master password, calls credentials.save_password, emits optional progress and shows completion. It is still a GUI-dependent operation when invoked. setup here is credential setup, while tifrvpn.setup is NetworkManager profile setup; their module names disambiguate the same ordinary word.
+Qt dialog classes are imported at module scope. Calling setup creates/reuses a Qt application, verifies the saved vault entry and delegates encryption/storage to the headless credential helpers. Merely loading the module does not open the password prompt.
 
 **Relation to main:** [[TIFR Vpn TUI#7.2 tifr-otp.py|tifr-otp.py]] — The interactive portion of setup keeps the dialogs and delegates ciphertext saving to credentials.save_password.
 
 **Functions and their purpose**
 
-- **setup**, L6–L51: Define GUI setup with selected paths/entry/recipient and optional progress; its integer result represents success or cancellation for the OTP command adapter.
+- **setup**, L8–L51: Define GUI setup with selected paths/entry/recipient and optional progress; its integer result represents success or cancellation for the OTP command adapter.
 
-
-#### 13.14.1 L1–L5 · Module documentation, imports and shared definitions
-
+#### 13.14.1 L1–L7 · Module setup and definitions
 
 ```python
-"""Interactive credential setup; Qt is loaded only when requested."""
+"""Interactive credential setup; dialogs open only when setup is called."""
+
+from PySide6.QtWidgets import QApplication, QInputDialog, QLineEdit, QMessageBox
 
 from ..credentials import read_login, recipient_key, save_password
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L1** — Document that Qt imports are delayed until the setup operation is explicitly requested.
-- **L3** — Import reusable vault verification, recipient selection and ciphertext saving from the parent package's credentials module. Two dots move from tifrvpn.gui to tifrvpn.
+- **L1** — Document that importing Qt classes is separate from opening the setup dialogs.
+- **L3** — Bind QApplication, QInputDialog, QLineEdit, QMessageBox from PySide6.QtWidgets at module scope. These names are then available to the functions below without a function-local import.
+- **L5** — Bind read_login, recipient_key, save_password from ..credentials at module scope. These names are then available to the functions below without a function-local import.
 
-
-#### 13.14.2 L6–L37 · setup · section 1
-
+#### 13.14.2 L8–L39 · setup
 
 ```python
 def setup(password_file, database, entry, recipient, *, on_progress=None):
-    from PySide6.QtWidgets import QApplication, QInputDialog, QLineEdit, QMessageBox
-
     _app = QApplication.instance() or QApplication(
         []
     )  # Keep Qt alive through all dialogs.
@@ -3643,26 +3673,23 @@ def setup(password_file, database, entry, recipient, *, on_progress=None):
             read_login(password, database, entry)
         except RuntimeError as error:
             QMessageBox.warning(None, "Could not verify database password", str(error))
+            continue
+        break
 ```
 
 **Line-by-line explanation**
 
-- **L6** — Define GUI setup with selected paths/entry/recipient and optional progress; its integer result represents success or cancellation for the OTP command adapter.
-- **L7** — Load PySide6 widgets only now, preserving import safety for applications that never use this dialog.
+- **L8** — Define GUI setup with selected paths/entry/recipient and optional progress; its integer result represents success or cancellation for the OTP command adapter.
 - **L9–L11** — Reuse or create QApplication and retain a local reference for the entire dialog sequence so Qt stays alive.
 - **L12–L21** — If a ciphertext destination or symlink already exists, ask whether to replace it, default to No, and return 130 for cancellation.
 - **L22** — Resolve the explicit/automatic GPG recipient before collecting the master password.
 - **L23–L31** — Repeatedly prompt for the KeePass database master password in a masked field, clearly distinguishing it from the TIFR account password.
 - **L32–L33** — Return cancellation without encryption if the input dialog was dismissed.
-- **L34–L37** — Verify that the password opens the configured entry and yields login fields/TOTP. On readable failure show a warning and retry; break the loop only after local success. This does not test an actual server login.
+- **L34–L39** — Verify that the password opens the configured entry and yields login fields/TOTP. On readable failure show a warning and retry; break the loop only after local success. This does not test an actual server login.
 
-
-#### 13.14.3 L38–L51 · setup · section 2
-
+#### 13.14.3 L40–L51 · setup
 
 ```python
-            continue
-        break
     save_password(password, password_file, recipient)
     password = None
     if on_progress is not None:
@@ -3679,43 +3706,38 @@ def setup(password_file, database, entry, recipient, *, on_progress=None):
 
 **Line-by-line explanation**
 
-- **L38–L39** — Verify that the password opens the configured entry and yields login fields/TOTP. On readable failure show a warning and retry; break the loop only after local success. This does not test an actual server login.
 - **L40** — Delegate GPG encryption and atomic ciphertext replacement to the headless credentials.save\_password function.
 - **L41** — Drop this variable's plaintext reference; Python/Qt do not promise secure wiping of every prior memory copy.
 - **L42–L45** — If requested, report only the ciphertext destination and successful local verification through the caller's callback.
 - **L46–L50** — Show the completion dialog explaining the OTP command; no account password or seed is shown in that message.
 - **L51** — Return success to cli.otp\_main after dialogs complete.
 
-
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.15 Package source — src/tifrvpn/gui/sso.py
 
-
-The GTK/WebKit window and restricted autofill logic moved out of the old all-in-one authentication script. It is loaded and executed in the private worker. Normal imports now provide credentials/config/keyring functions; explicit Config can travel from a library caller into the browser. Origin/path checks, one-attempt-per-step guards, DSID validation, cookie-domain restrictions, cancellation handling and timers retain the main behavior. The parent captures this worker’s stderr, so messages printed here can be replayed only after the child returns.
+The isolated worker imports GTK/WebKit/Soup at module scope after selecting the intended namespace versions. login_cookie still performs all actual window, credential and cookie operations. Import placement does not remove the subprocess boundary between this browser and the tunnel controller.
 
 **Relation to main:** [[TIFR Vpn TUI#7.3 tifr-vpn-auth.py|tifr-vpn-auth.py]] — signin_script, confirmation JavaScript and login_cookie move into the optional GUI module.
 
 **Functions and their purpose**
 
-- **signin\_script**, L20–L53: Autofill only TIFR's Keycloak forms, returning status without field values.
-- **login\_cookie**, L56–L336: Define actual graphical login with optional quiet behavior and optional explicit Config. The controller launches it in a separate interpreter, so ordinary library import remains safe.
-- **login\_cookie.fill\_ready**, L81–L87: Define the callback invoked after the JavaScript filling operation finishes. 'source' is the WebView and result is its asynchronous result handle.
-- **login\_cookie.form\_ready**, L89–L149: Define the callback that receives inspected form status and decides whether to load credentials and fill it.
-- **login\_cookie.autofill\_tick**, L151–L164: Define the repeating timer callback that looks for a ready SSO form.
-- **login\_cookie.remember\_browser**, L166–L193: Define the callback that stores allowed browser cookies after a valid VPN session has been identified.
-- **login\_cookie.cookies\_ready**, L195–L220: Define the callback for a cookie lookup associated with the gateway portal.
-- **login\_cookie.confirmation\_ready**, L222–L231: Define the completion callback for quiet-mode concurrent-session warning detection.
-- **login\_cookie.check\_cookies**, L233–L250: Define an event callback accepting any extra signal arguments, which it does not need. Different GTK signals supply different argument lists.
-- **login\_cookie.tls\_error**, L252–L255: Define handling for TLS certificate errors from the embedded browser. Leading underscores indicate arguments intentionally unused.
-- **login\_cookie.close**, L257–L259: Define the callback for closing the sign-in window.
-- **login\_cookie.load\_page**, L267–L268: Define a small function that begins portal navigation after any cookie restoration finishes.
-- **login\_cookie.restored**, L272–L279: Define the callback called after each restored cookie has been added to WebKit.
-- **login\_cookie.portal\_tick**, L321–L323: Define a periodic portal-cookie check callback.
+- **signin_script**, L27–L60: Autofill only TIFR's Keycloak forms, returning status without field values.
+- **login_cookie**, L63–L336: Define actual graphical login with optional quiet behavior and optional explicit Config. The controller launches it in a separate interpreter, so ordinary library import remains safe.
+- **login_cookie.fill_ready**, L81–L87: Define the callback invoked after the JavaScript filling operation finishes. 'source' is the WebView and result is its asynchronous result handle.
+- **login_cookie.form_ready**, L89–L149: Define the callback that receives inspected form status and decides whether to load credentials and fill it.
+- **login_cookie.autofill_tick**, L151–L164: Define the repeating timer callback that looks for a ready SSO form.
+- **login_cookie.remember_browser**, L166–L193: Define the callback that stores allowed browser cookies after a valid VPN session has been identified.
+- **login_cookie.cookies_ready**, L195–L220: Define the callback for a cookie lookup associated with the gateway portal.
+- **login_cookie.confirmation_ready**, L222–L231: Define the completion callback for quiet-mode concurrent-session warning detection.
+- **login_cookie.check_cookies**, L233–L250: Define an event callback accepting any extra signal arguments, which it does not need. Different GTK signals supply different argument lists.
+- **login_cookie.tls_error**, L252–L255: Define handling for TLS certificate errors from the embedded browser. Leading underscores indicate arguments intentionally unused.
+- **login_cookie.close**, L257–L259: Define the callback for closing the sign-in window.
+- **login_cookie.load_page**, L267–L268: Define a small function that begins portal navigation after any cookie restoration finishes.
+- **login_cookie.restored**, L272–L279: Define the callback called after each restored cookie has been added to WebKit.
+- **login_cookie.portal_tick**, L321–L323: Define a periodic portal-cookie check callback.
 
-
-#### 13.15.1 L1–L19 · Module documentation, imports and shared definitions
-
+#### 13.15.1 L1–L26 · Module setup and definitions
 
 ```python
 """GTK/WebKit SSO window, executed in the isolated worker process."""
@@ -3725,38 +3747,50 @@ import sys
 import time
 from urllib.parse import urlsplit
 
+import gi
+
 from .. import credentials
 from ..auth import valid_session
 from ..config import HOST, URL, load_config
 from ..errors import AuthenticationError
 from ..keyring import load_browser_state, save_browser_state
 
+gi.require_version("Gtk", "3.0")
+gi.require_version("WebKit2", "4.1")
+gi.require_version("Soup", "3.0")
+from gi.repository import GLib, Gtk, Soup, WebKit2  # noqa: E402 - Select namespace versions first.
+
 CONFIRMATION_SCRIPT = """(() => {
   if (location.origin !== 'https://sslvpn.tifr.res.in') return false;
   return /There are already other user sessions in progress|Continue will result in termination of the other session/i.test(document.body?.innerText || '');
 })()"""
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L1** — Document that this GUI implementation runs in the isolated SSO worker, not in the embedding application's process.
-- **L3** — json converts browser status, cookie records and credential data between structured values and text.
-- **L4** — sys provides the current interpreter path, argument list, streams and exit functions.
-- **L5** — time provides the current time for OTP boundaries and cookie expiry checks.
-- **L6** — urlsplit separates a URL into scheme, hostname, port, path and related pieces.
-- **L8** — Import the reusable parent-package credentials module, replacing runpy loading of tifr-otp.py.
-- **L9** — Import portal-session validation from the separate non-GUI authentication supervisor.
-- **L10** — Use centralized gateway identity constants and explicit configuration loading.
-- **L11** — Use AuthenticationError instead of a bare RuntimeError to preserve typed failures across library layers.
-- **L12** — Use named browser-state keyring helpers rather than a general saved\_login(kind, ...) call scattered through the GUI.
-- **L14** — Begin JavaScript that recognizes known concurrent-session warning wording on the VPN origin.
-- **L15** — Only inspect confirmation text on the exact HTTPS VPN origin. An origin combines scheme, host and effective port.
-- **L16** — Test visible page text for either of two known concurrent-session warnings, ignoring letter case with /i. ?. safely handles a missing body; || '' uses empty text if needed. This detects known wording; it does not automatically click a confirmation button.
-- **L17** — Close the immediately invoked JavaScript warning detector and its Python multiline string; no browser evaluation occurs merely by constructing this constant.
+- **L1** — Document this module responsibility and when its actual application operations run; this string does not execute those operations.
+- **L3** — Import json at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L4** — Import sys at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L5** — Import time at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L6** — Bind urlsplit from urllib.parse at module scope. These names are then available to the functions below without a function-local import.
+- **L8** — Import gi at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L10** — Bind credentials from .. at module scope. These names are then available to the functions below without a function-local import.
+- **L11** — Bind valid_session from ..auth at module scope. These names are then available to the functions below without a function-local import.
+- **L12** — Bind HOST, URL, load_config from ..config at module scope. These names are then available to the functions below without a function-local import.
+- **L13** — Bind AuthenticationError from ..errors at module scope. These names are then available to the functions below without a function-local import.
+- **L14** — Bind load_browser_state, save_browser_state from ..keyring at module scope. These names are then available to the functions below without a function-local import.
+- **L16** — Require GTK API 3.0 before importing the GTK namespace.
+- **L17** — Require the WebKit2 4.1 namespace, matching the native WebKitGTK library used by this project.
+- **L18** — Require Soup API 3.0 before importing it; these selections happen at module load.
+- **L19** — Import GLib, Gtk, Soup, WebKit2 from the selected GI namespaces at module scope. Version selection above must happen first; the E402 comment documents that intentional import ordering.
+- **L21** — Begin JavaScript that recognizes known concurrent-session warning wording on the VPN origin.
+- **L22** — Only inspect confirmation text on the exact HTTPS VPN origin. An origin combines scheme, host and effective port.
+- **L23** — Test visible page text for either of two known concurrent-session warnings, ignoring letter case with /i. ?. safely handles a missing body; || '' uses empty text if needed. This detects known wording; it does not automatically click a confirmation button.
+- **L24** — Close the immediately invoked JavaScript warning detector and its Python multiline string; no browser evaluation occurs merely by constructing this constant.
 
-
-#### 13.15.2 L20–L51 · signin_script · section 1
-
+#### 13.15.2 L27–L58 · signin_script
 
 ```python
 def signin_script(values=None):
@@ -3795,62 +3829,53 @@ def signin_script(values=None):
 
 **Line-by-line explanation**
 
-- **L20–L21** — Build the same restricted Keycloak form-inspection/autofill JavaScript described in the main guide; values=None means inspect without supplied credentials.
-- **L22–L23** — Return a parenthesized concatenation of a multiline JavaScript string and JSON-encoded data; reformatting here does not execute the script until WebKit evaluates it later.
-- **L24** — Require the exact TIFR SSO HTTPS origin. || means JavaScript logical OR, so either invalid origin or invalid path stops processing.
-- **L25** — Also require the intended Keycloak realm path. Return JSON text with step:null if this is not an allowed page. This helps prevent filling credentials into an unexpected page.
-- **L26** — Define a small JavaScript predicate: an input must exist, be enabled, and have layout rectangles to count as visible. This is a practical visibility check rather than a complete browser-perception model.
-- **L27** — Select known validation/error elements. \[...nodeList\] turns results into an array; .some(visible) checks if any selected error is visible.
-- **L28** — Return an error status when the page reports a known visible validation error, avoiding repeated blind submissions.
-- **L29** — Locate one of the expected Keycloak login/OTP form IDs. CSS # selects an element ID; commas mean alternatives.
-- **L30** — Require a form whose submission destination has the same origin as the current page. new URL resolves a relative form.action against the page address.
-- **L31** — Return no actionable step if that destination check fails.
-- **L32** — Locate the username input inside the chosen form using its name attribute.
-- **L33** — Locate the password input similarly.
-- **L34** — Locate either supported OTP input name: otp or totp.
-- **L35** — Choose the current form step by visibility, preferring OTP, then password, then username. The ? : syntax is JavaScript's conditional expression.
-- **L36** — Ignore unknown steps and a form already marked by this helper as submitted. dataset accesses HTML data-\* properties.
-- **L37** — If no values were supplied, return only which form step is ready. This separates inspection from loading the password vault.
-- **L38** — Define a helper that sets one input and dispatches browser events so the login page can notice the change.
-- **L39** — Do nothing when the input is not visible or no value was provided for it.
-- **L40** — Use the native HTMLInputElement value setter to update the field, including pages that wrap input handling. The secret is inserted into a DOM input, so it is present in the browser process during login.
-- **L41** — Dispatch a bubbling input event. Bubbling lets handlers on parent elements see the event.
-- **L42** — Dispatch a change event for login-page code listening for completed edits.
-- **L43** — Close the JavaScript field-setting helper inside the generated script. Its statements run later within the browser's allowed page context.
-- **L44** — Attempt to fill all three possible fields. Missing or hidden fields are skipped by the setter, so the same script supports multi-page and combined forms.
-- **L45** — Do not submit an OTP form if a fresh OTP value was not supplied.
-- **L46** — Mark this particular form as submitted to reduce duplicate submissions.
-- **L47** — Find an explicit submit input or button when available.
-- **L48** — Use requestSubmit with the submit button if found, otherwise requestSubmit without an argument. This respects normal browser form-submission behavior better than bypassing it with a raw submit call.
-- **L49** — Return status naming the submitted step, without returning credentials.
-- **L50–L51** — Complete the JavaScript function string, append json.dumps(values), close its invocation and finish the Python concatenation. JSON serialization treats credential values as data within the script.
+- **L27–L28** — Build the same restricted Keycloak form-inspection/autofill JavaScript described in the main guide; values=None means inspect without supplied credentials.
+- **L29–L30** — Return a parenthesized concatenation of a multiline JavaScript string and JSON-encoded data; reformatting here does not execute the script until WebKit evaluates it later.
+- **L31** — Require the exact TIFR SSO HTTPS origin. || means JavaScript logical OR, so either invalid origin or invalid path stops processing.
+- **L32** — Also require the intended Keycloak realm path. Return JSON text with step:null if this is not an allowed page. This helps prevent filling credentials into an unexpected page.
+- **L33** — Define a small JavaScript predicate: an input must exist, be enabled, and have layout rectangles to count as visible. This is a practical visibility check rather than a complete browser-perception model.
+- **L34** — Select known validation/error elements. \[...nodeList\] turns results into an array; .some(visible) checks if any selected error is visible.
+- **L35** — Return an error status when the page reports a known visible validation error, avoiding repeated blind submissions.
+- **L36** — Locate one of the expected Keycloak login/OTP form IDs. CSS # selects an element ID; commas mean alternatives.
+- **L37** — Require a form whose submission destination has the same origin as the current page. new URL resolves a relative form.action against the page address.
+- **L38** — Return no actionable step if that destination check fails.
+- **L39** — Locate the username input inside the chosen form using its name attribute.
+- **L40** — Locate the password input similarly.
+- **L41** — Locate either supported OTP input name: otp or totp.
+- **L42** — Choose the current form step by visibility, preferring OTP, then password, then username. The ? : syntax is JavaScript's conditional expression.
+- **L43** — Ignore unknown steps and a form already marked by this helper as submitted. dataset accesses HTML data-\* properties.
+- **L44** — If no values were supplied, return only which form step is ready. This separates inspection from loading the password vault.
+- **L45** — Define a helper that sets one input and dispatches browser events so the login page can notice the change.
+- **L46** — Do nothing when the input is not visible or no value was provided for it.
+- **L47** — Use the native HTMLInputElement value setter to update the field, including pages that wrap input handling. The secret is inserted into a DOM input, so it is present in the browser process during login.
+- **L48** — Dispatch a bubbling input event. Bubbling lets handlers on parent elements see the event.
+- **L49** — Dispatch a change event for login-page code listening for completed edits.
+- **L50** — Close the JavaScript field-setting helper inside the generated script. Its statements run later within the browser's allowed page context.
+- **L51** — Attempt to fill all three possible fields. Missing or hidden fields are skipped by the setter, so the same script supports multi-page and combined forms.
+- **L52** — Do not submit an OTP form if a fresh OTP value was not supplied.
+- **L53** — Mark this particular form as submitted to reduce duplicate submissions.
+- **L54** — Find an explicit submit input or button when available.
+- **L55** — Use requestSubmit with the submit button if found, otherwise requestSubmit without an argument. This respects normal browser form-submission behavior better than bypassing it with a raw submit call.
+- **L56** — Return status naming the submitted step, without returning credentials.
+- **L57–L58** — Complete the JavaScript function string, append json.dumps(values), close its invocation and finish the Python concatenation. JSON serialization treats credential values as data within the script.
 
-
-#### 13.15.3 L52–L55 · signin_script · section 2
-
+#### 13.15.3 L59–L62 · signin_script
 
 ```python
         + ")"
     )
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L52–L53** — Complete the JavaScript function string, append json.dumps(values), close its invocation and finish the Python concatenation. JSON serialization treats credential values as data within the script.
+- **L59–L60** — Complete the JavaScript function string, append json.dumps(values), close its invocation and finish the Python concatenation. JSON serialization treats credential values as data within the script.
 
-
-#### 13.15.4 L56–L80 · login_cookie
-
+#### 13.15.4 L63–L80 · login_cookie
 
 ```python
 def login_cookie(*, quiet=False, config=None):
-    import gi
-
-    gi.require_version("Gtk", "3.0")
-    gi.require_version("WebKit2", "4.1")
-    gi.require_version("Soup", "3.0")
-    from gi.repository import GLib, Gtk, Soup, WebKit2
-
     if not Gtk.init_check()[0]:
         raise AuthenticationError("A graphical session is required for TIFR SSO login.")
     context = WebKit2.WebContext.new_ephemeral()
@@ -3867,16 +3892,12 @@ def login_cookie(*, quiet=False, config=None):
     window.add(layout)
     session = {"cookie": None, "busy": False, "error": None}
     autofill = {"busy": False, "stopped": False, "submitted": set(), "provider": None}
+
 ```
 
 **Line-by-line explanation**
 
-- **L56** — Define actual graphical login with optional quiet behavior and optional explicit Config. The controller launches it in a separate interpreter, so ordinary library import remains safe.
-- **L57** — Import PyGObject's gi bridge only when keyring support is used.
-- **L59** — Select GTK version 3.0.
-- **L60** — Select WebKit2 namespace 4.1. This is the GTK web engine API namespace, not a Python package version string.
-- **L61** — Select libsoup namespace version 3.0 for cookie objects.
-- **L62** — Import the event-loop utilities, window toolkit, HTTP-cookie library and embedded browser bindings.
+- **L63** — Define actual graphical login with optional quiet behavior and optional explicit Config. The controller launches it in a separate interpreter, so ordinary library import remains safe.
 - **L64** — Attempt GTK initialization and inspect its success flag. A usable display is required, either the real desktop or an Xvfb virtual display.
 - **L65** — Raise the typed authentication failure when GTK cannot initialize a real or virtual display.
 - **L66** — Create an ephemeral WebKit context: it avoids an ordinary persistent browser profile on disk. This program still deliberately saves selected cookies separately in the keyring.
@@ -3894,9 +3915,7 @@ def login_cookie(*, quiet=False, config=None):
 - **L78** — Initialize shared sign-in state: no accepted cookie, no pending cookie lookup and no error. Nested callbacks mutate this dictionary.
 - **L79** — Initialize autofill state: busy/stopped flags, a set of submitted step names, and no loaded credential provider. A set keeps unique values and supports quick membership checks.
 
-
 #### 13.15.5 L81–L88 · login_cookie.fill_ready
-
 
 ```python
     def fill_ready(source, result):
@@ -3906,6 +3925,7 @@ def login_cookie(*, quiet=False, config=None):
         except Exception:  # noqa: BLE001, S110 - Navigation can invalidate the JavaScript context.
             # Navigation can destroy the previous page's JS context.
             pass
+
 ```
 
 **Line-by-line explanation**
@@ -3916,9 +3936,7 @@ def login_cookie(*, quiet=False, config=None):
 - **L84** — Finish the WebKit asynchronous JavaScript operation. The return value is not needed here.
 - **L85–L87** — Ignore a JavaScript-completion error caused by navigation destroying its old context. noqa suppresses chosen linter warnings; the comment itself changes no runtime behavior.
 
-
-#### 13.15.6 L89–L120 · login_cookie.form_ready · section 1
-
+#### 13.15.6 L89–L120 · login_cookie.form_ready
 
 ```python
     def form_ready(source, result):
@@ -3971,8 +3989,8 @@ def login_cookie(*, quiet=False, config=None):
 - **L105** — Get the current recognized form step, or None if absent.
 - **L106** — If no actionable step exists or that named step was already submitted during this attempt, do nothing. This set-level guard spans navigations as well as the DOM marker.
 - **L107** — Ignore an unrecognized step or a named form step already submitted during this attempt.
-- **L108** — Load vault support only once and only when a usable recognized form requires it.
-- **L109** — Use the explicitly passed Config when supplied; otherwise load defaults/JSON/environment only when a recognized form needs credentials.
+- **L108** — Delay creation of the credential provider until autofill first needs it. This is an operation/data initialization check, not a deferred Python import.
+- **L109** — Use an explicitly supplied Config when available, otherwise load the selected defaults/JSON/environment settings at that point.
 - **L110** — Validate real vault existence and GPG availability at this credential-use point.
 - **L111–L115** — Extract the selected Config's database, encrypted-password path and entry attributes for the existing autofill provider structure.
 - **L116** — Use the imported credentials module itself as helper; no dictionary of runpy-loaded definitions is needed.
@@ -3981,9 +3999,7 @@ def login_cookie(*, quiet=False, config=None):
 - **L119** — Cache the helper definitions, paths, entry, master password and login dictionary in this browser process for later form steps. The master password is therefore in process memory during the attempt.
 - **L120** — Unpack the cached provider tuple for convenient use.
 
-
-#### 13.15.7 L121–L150 · login_cookie.form_ready · section 2
-
+#### 13.15.7 L121–L150 · login_cookie.form_ready
 
 ```python
             values = dict(login)
@@ -4015,6 +4031,7 @@ def login_cookie(*, quiet=False, config=None):
             )
         finally:
             autofill["busy"] = False
+
 ```
 
 **Line-by-line explanation**
@@ -4042,9 +4059,7 @@ def login_cookie(*, quiet=False, config=None):
 - **L148** — The finally block always runs, including after return or an exception.
 - **L149** — Release the autofill busy flag, allowing later ticks where autofill has not been stopped.
 
-
 #### 13.15.8 L151–L165 · login_cookie.autofill_tick
-
 
 ```python
     def autofill_tick():
@@ -4061,6 +4076,7 @@ def login_cookie(*, quiet=False, config=None):
             autofill["busy"] = True
             view.evaluate_javascript(signin_script(), -1, None, None, None, form_ready)
         return True
+
 ```
 
 **Line-by-line explanation**
@@ -4072,9 +4088,7 @@ def login_cookie(*, quiet=False, config=None):
 - **L163** — Run the inspection version of signin\_script, with no supplied credentials, and use form\_ready to process its response.
 - **L164** — Return True to keep GLib's half-second autofill timer repeating. It is a timer-lifetime instruction, not a connected-VPN result.
 
-
 #### 13.15.9 L166–L194 · login_cookie.remember_browser
-
 
 ```python
     def remember_browser(source, result):
@@ -4105,6 +4119,7 @@ def login_cookie(*, quiet=False, config=None):
         except Exception:  # noqa: BLE001 - Never expose authentication data from backend errors.
             print("tifr VPN: browser session could not be remembered.", file=sys.stderr)
         Gtk.main_quit()
+
 ```
 
 **Line-by-line explanation**
@@ -4122,9 +4137,7 @@ def login_cookie(*, quiet=False, config=None):
 - **L192** — Explain that browser state could not be remembered; failure to cache is separate from whether this login succeeded.
 - **L193** — Stop the GTK loop now that the current successful session has been collected.
 
-
 #### 13.15.10 L195–L221 · login_cookie.cookies_ready
-
 
 ```python
     def cookies_ready(source, result):
@@ -4153,6 +4166,7 @@ def login_cookie(*, quiet=False, config=None):
                 else:
                     manager.get_all_cookies(None, remember_browser)
                 return
+
 ```
 
 **Line-by-line explanation**
@@ -4182,9 +4196,7 @@ def login_cookie(*, quiet=False, config=None):
 - **L219** — Asynchronously retrieve all browser cookies, with remember\_browser as the completion callback.
 - **L220** — Finish processing the first relevant DSID cookie; do not continue accepting additional candidates in this callback.
 
-
 #### 13.15.11 L222–L232 · login_cookie.confirmation_ready
-
 
 ```python
     def confirmation_ready(source, result):
@@ -4197,6 +4209,7 @@ def login_cookie(*, quiet=False, config=None):
                 "TIFR requires confirmation to replace another session. Retry tifrvpn -c and review the warning."
             )
             Gtk.main_quit()
+
 ```
 
 **Line-by-line explanation**
@@ -4209,9 +4222,7 @@ def login_cookie(*, quiet=False, config=None):
 - **L228–L230** — Record that explicit session-replacement review is required. This helper does not click the confirmation automatically.
 - **L231** — Stop the GTK loop.
 
-
 #### 13.15.12 L233–L251 · login_cookie.check_cookies
-
 
 ```python
     def check_cookies(*_args):
@@ -4232,6 +4243,7 @@ def login_cookie(*, quiet=False, config=None):
             manager.get_cookies(
                 "https://" + HOST + "/dana/home/index.cgi", None, cookies_ready
             )
+
 ```
 
 **Line-by-line explanation**
@@ -4245,15 +4257,14 @@ def login_cookie(*, quiet=False, config=None):
 - **L245–L247** — Asynchronously inspect known session-conflict warnings in quiet mode and route the result to confirmation\_ready.
 - **L248–L250** — Asynchronously retrieve cookies scoped to the portal URL, using cookies\_ready to validate the resulting DSID.
 
-
 #### 13.15.13 L252–L256 · login_cookie.tls_error
-
 
 ```python
     def tls_error(_view, _uri, _certificate, _errors):
         session["error"] = "SSO certificate verification failed. Contact TIFR IT."
         Gtk.main_quit()
         return False
+
 ```
 
 **Line-by-line explanation**
@@ -4263,9 +4274,7 @@ def login_cookie(*, quiet=False, config=None):
 - **L254** — Stop the event loop.
 - **L255** — Return False from the TLS error handler so the browser does not treat this callback as accepting an invalid certificate.
 
-
 #### 13.15.14 L257–L266 · login_cookie.close
-
 
 ```python
     def close(*_args):
@@ -4277,6 +4286,7 @@ def login_cookie(*, quiet=False, config=None):
     view.connect("notify::uri", lambda *_: address.set_text(view.get_uri() or URL))
     view.connect("load-failed-with-tls-errors", tls_error)
     window.connect("delete-event", close)
+
 ```
 
 **Line-by-line explanation**
@@ -4290,15 +4300,14 @@ def login_cookie(*, quiet=False, config=None):
 - **L264** — Connect certificate-failure events to the strict TLS error handler.
 - **L265** — Connect a user window-close request to the close callback.
 
-
 #### 13.15.15 L267–L271 · login_cookie.load_page
-
 
 ```python
     def load_page():
         view.load_uri(URL)
 
     pending = {"count": 0}
+
 ```
 
 **Line-by-line explanation**
@@ -4307,9 +4316,7 @@ def login_cookie(*, quiet=False, config=None):
 - **L268** — Tell the WebView to load the fixed portal URL.
 - **L270** — Initialize a mutable counter for outstanding asynchronous cookie-restoration operations.
 
-
-#### 13.15.16 L272–L303 · login_cookie.restored · section 1
-
+#### 13.15.16 L272–L303 · login_cookie.restored
 
 ```python
     def restored(source, result):
@@ -4369,9 +4376,7 @@ def login_cookie(*, quiet=False, config=None):
 - **L300** — Skip the expired cookie without attempting to restore it.
 - **L301–L303** — Construct a libsoup cookie from validated saved fields before restoring its security flags and explicit expiry.
 
-
-#### 13.15.17 L304–L320 · login_cookie.restored · section 2
-
+#### 13.15.17 L304–L320 · login_cookie
 
 ```python
             cookie.set_secure(record["secure"])
@@ -4411,9 +4416,7 @@ def login_cookie(*, quiet=False, config=None):
 - **L317** — Schedule autofill\_tick every 500 milliseconds, twice per second; store the timer ID for later removal.
 - **L319–L320** — Comments explain the second timer: load-change events may fire before the page truly settles, especially with delayed redirects.
 
-
 #### 13.15.18 L321–L336 · login_cookie.portal_tick
-
 
 ```python
     def portal_tick():
@@ -4452,86 +4455,91 @@ def login_cookie(*, quiet=False, config=None):
 - **L335** — Report an incomplete/cancelled sign-in rather than returning a missing token.
 - **L336** — Return the validated DSID string to this process's caller.
 
-
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.16 Package source — src/tifrvpn/gui/qr_import.py
 
-
-The Qt camera/image UI moved out of the old combined QR script. Pure parsing and TOTP calculation now come from tifrvpn.totp, so applications/tests can use those without importing NumPy, ZXing or Qt. run(image=False) is a regular callable rather than a script-only main. User interaction still copies the seed manually into KeePassXC; the scanner does not edit that database or upload camera data.
+The local image/camera importer loads Qt, NumPy and ZXing at module scope. run verifies a QApplication, captures its clipboard interface, and defines the scanner window. The scan passes a BarcodeFormats selection object. Copying is guarded until an account exists; cleanup preserves clipboard text copied afterward. No real secret is needed to test those paths.
 
 **Relation to main:** [[TIFR Vpn TUI#7.5 tifr-import-totp.py|tifr-import-totp.py]] — The Scanner/Qt workflow moves into run(image=...), importing algorithms from the parent package.
 
 **Functions and their purpose**
 
-- **run**, L8–L228: Define the scanner runner with keyword-only image=False; cli.import\_totp\_main parses --image and passes the boolean here.
-- **run.Scanner.\_\_init\_\_**, L33–L121: Define the object initializer. self refers to the particular Scanner instance being initialized.
-- **run.Scanner.open\_image**, L123–L146: Define the image-file selection handler.
-- **run.Scanner.frame**, L148–L162: Define the per-camera-frame callback. The argument named frame is a Qt video frame, separate from this method's own name.
-- **run.Scanner.scan\_image**, L164–L197: Define the common scanner used by both camera frames and selected image files.
-- **run.Scanner.refresh\_code**, L199–L206: Define code-display refresh.
-- **run.Scanner.copy\_key**, L208–L211: Define the copy-button handler.
-- **run.Scanner.clear\_clipboard**, L213–L216: Define guarded clipboard cleanup.
-- **run.Scanner.closeEvent**, L218–L224: Override QWidget's close-event handler so closing the window cleans up devices and displayed state.
+- **run**, L29–L233: Define the scanner runner with keyword-only image=False; cli.import\_totp\_main parses --image and passes the boolean here.
+- **run.Scanner.__init__**, L36–L124: Define the object initializer. self refers to the particular Scanner instance being initialized.
+- **run.Scanner.open_image**, L126–L149: Define the image-file selection handler.
+- **run.Scanner.frame**, L151–L165: Define the per-camera-frame callback. The argument named frame is a Qt video frame, separate from this method's own name.
+- **run.Scanner.scan_image**, L167–L200: Define the common scanner used by both camera frames and selected image files.
+- **run.Scanner.refresh_code**, L202–L209: Define code-display refresh.
+- **run.Scanner.copy_key**, L211–L216: Copy only after a valid account exists, record the copied seed and schedule conditional cleanup.
+- **run.Scanner.clear_clipboard**, L218–L221: Clear the live clipboard only when it still matches the seed this window copied.
+- **run.Scanner.closeEvent**, L223–L229: Override QWidget's close-event handler so closing the window cleans up devices and displayed state.
 
-
-#### 13.16.1 L1–L7 · Module documentation, imports and shared definitions
-
+#### 13.16.1 L1–L28 · Module setup and definitions
 
 ```python
-"""Local webcam/image importer; no GUI dependencies load at import time."""
+"""Local webcam/image importer; scanning starts only when run is called."""
 
 import time
 
+import numpy as np
+import zxingcpp
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QImage, QPixmap
+from PySide6.QtMultimedia import (
+    QCamera,
+    QMediaCaptureSession,
+    QMediaDevices,
+    QVideoSink,
+)
+from PySide6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QFileDialog,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
+
 from ..totp import current_code, decode_export
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L1** — Document that importing the UI module itself does not load its heavy optional GUI/scanner dependencies.
-- **L3** — Use wall-clock time for codes and monotonic time for scan throttling when the tool is invoked.
-- **L5** — Import pure-data code calculation/export decoding from the parent package's totp module, replacing local duplicate implementations.
+- **L1** — Document that imports load dependencies, while camera/image scanning begins only when run() is called.
+- **L3** — Import time at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L5** — Import numpy as np at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L6** — Import zxingcpp at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L7** — Bind Qt, QTimer from PySide6.QtCore at module scope. These names are then available to the functions below without a function-local import.
+- **L8** — Bind QImage, QPixmap from PySide6.QtGui at module scope. These names are then available to the functions below without a function-local import.
+- **L9–L14** — Bind QCamera, QMediaCaptureSession, QMediaDevices, QVideoSink from PySide6.QtMultimedia at module scope. These names are then available to the functions below without a function-local import.
+- **L15–L24** — Bind QApplication, QCheckBox, QFileDialog, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget from PySide6.QtWidgets at module scope. These names are then available to the functions below without a function-local import.
+- **L26** — Bind current_code, decode_export from ..totp at module scope. These names are then available to the functions below without a function-local import.
 
-
-#### 13.16.2 L8–L31 · run
-
+#### 13.16.2 L29–L34 · run
 
 ```python
 def run(*, image=False):
-    import numpy as np
-    import zxingcpp
-    from PySide6.QtCore import Qt, QTimer
-    from PySide6.QtGui import QImage, QPixmap
-    from PySide6.QtMultimedia import (
-        QCamera,
-        QMediaCaptureSession,
-        QMediaDevices,
-        QVideoSink,
-    )
-    from PySide6.QtWidgets import (
-        QApplication,
-        QCheckBox,
-        QFileDialog,
-        QLabel,
-        QLineEdit,
-        QPushButton,
-        QVBoxLayout,
-        QWidget,
-    )
-
     app = QApplication.instance() or QApplication([])
+    if not isinstance(app, QApplication):
+        raise RuntimeError("The QR importer requires a QApplication instance.")
+    clipboard = app.clipboard()
+
 ```
 
 **Line-by-line explanation**
 
-- **L8** — Define the scanner runner with keyword-only image=False; cli.import\_totp\_main parses --image and passes the boolean here.
-- **L9–L10** — Load NumPy and the QR decoder only during actual scanner startup.
-- **L11–L28** — Load Qt core/image/camera/widget classes inside run. Each listed name supplies a UI, frame or media feature used by Scanner below; merely importing tifrvpn.gui.qr\_import does not require them.
+- **L29** — Define the scanner runner with keyword-only image=False; cli.import\_totp\_main parses --image and passes the boolean here.
 - **L30** — Reuse an existing Qt application if one exists or create a new one. The following app.exec is still a synchronous event-loop operation, so embedded use needs a suitable GUI lifecycle.
+- **L31** — Check that the reused or newly created Qt application is specifically a QApplication, which supports widgets and the clipboard interface.
+- **L32** — Stop with a clear error if another program already created only an unsuitable base application object.
+- **L33** — Obtain the application clipboard interface once; the nested handlers use this same object.
 
-
-#### 13.16.3 L32–L32 · run.Scanner — type/state/test structure
-
+#### 13.16.3 L35–L35 · run
 
 ```python
     class Scanner(QWidget):
@@ -4539,11 +4547,9 @@ def run(*, image=False):
 
 **Line-by-line explanation**
 
-- **L32** — Define the scanner QWidget subclass inside run, with methods capturing the run-local image choice and app object.
+- **L35** — Define the scanner QWidget subclass inside run, with methods capturing the run-local image choice and app object.
 
-
-#### 13.16.4 L33–L64 · run.Scanner.__init__ · section 1
-
+#### 13.16.4 L36–L67 · run.Scanner.__init__
 
 ```python
         def __init__(self):
@@ -4582,37 +4588,35 @@ def run(*, image=False):
 
 **Line-by-line explanation**
 
-- **L33** — Define the object initializer. self refers to the particular Scanner instance being initialized.
-- **L34** — Initialize the inherited QWidget part before configuring this custom window.
-- **L35** — No decoded account exists yet.
-- **L36** — Initialize the last-scan time for throttling camera processing.
-- **L37** — Track which setup key this tool placed on the clipboard so it can avoid erasing unrelated later clipboard text.
-- **L38** — Set the window title.
-- **L39** — Choose its initial size: 860 by 700 pixels.
-- **L40** — Create a vertical layout owned by this window.
-- **L41–L44** — Create the phone-side export/local-processing instruction label. Adjacent quoted strings concatenate into one message.
-- **L45** — Wrap long instructions to the available width.
-- **L46** — Add that label to the layout.
-- **L47** — Create a label that will show camera preview frames or status text.
-- **L48** — Center its content using a Qt alignment flag.
-- **L49** — Give the preview a minimum area of 640 by 360 pixels.
-- **L50** — Add it to the layout with stretch factor 1, letting it take available space.
-- **L51** — Create a button for choosing an existing local QR image.
-- **L52** — Connect its clicked signal to this instance's open\_image method. The method is passed without () so it runs on future clicks rather than immediately.
-- **L53** — Add the file-selection button to the window layout.
-- **L54** — Create a status label stating that this program does not save captured frames/setup keys as files. Selecting an image does not remove the original image file.
-- **L55** — Allow status messages to wrap.
-- **L56** — Add the status label.
-- **L57** — Create a single-line field for the decoded setup seed.
-- **L58** — Make it read-only so accidental typing cannot alter the displayed seed.
-- **L59** — Mask its text by default, like a password field.
-- **L60–L62** — Provide placeholder text for the masked seed field before a successful import.
-- **L63** — Add the masked field to the layout.
-- **L64** — Create a checkbox controlling whether the seed is visibly revealed.
+- **L36** — Define the object initializer. self refers to the particular Scanner instance being initialized.
+- **L37** — Initialize the inherited QWidget part before configuring this custom window.
+- **L38** — No decoded account exists yet.
+- **L39** — Initialize the last-scan time for throttling camera processing.
+- **L40** — Track which setup key this tool placed on the clipboard so it can avoid erasing unrelated later clipboard text.
+- **L41** — Set the window title.
+- **L42** — Choose its initial size: 860 by 700 pixels.
+- **L43** — Create a vertical layout owned by this window.
+- **L44–L47** — Create the phone-side export/local-processing instruction label. Adjacent quoted strings concatenate into one message.
+- **L48** — Wrap long instructions to the available width.
+- **L49** — Add that label to the layout.
+- **L50** — Create a label that will show camera preview frames or status text.
+- **L51** — Center its content using a Qt alignment flag.
+- **L52** — Give the preview a minimum area of 640 by 360 pixels.
+- **L53** — Add it to the layout with stretch factor 1, letting it take available space.
+- **L54** — Create a button for choosing an existing local QR image.
+- **L55** — Connect its clicked signal to this instance's open\_image method. The method is passed without () so it runs on future clicks rather than immediately.
+- **L56** — Add the file-selection button to the window layout.
+- **L57** — Create a status label stating that this program does not save captured frames/setup keys as files. Selecting an image does not remove the original image file.
+- **L58** — Allow status messages to wrap.
+- **L59** — Add the status label.
+- **L60** — Create a single-line field for the decoded setup seed.
+- **L61** — Make it read-only so accidental typing cannot alter the displayed seed.
+- **L62** — Mask its text by default, like a password field.
+- **L63–L65** — Provide placeholder text for the masked seed field before a successful import.
+- **L66** — Add the masked field to the layout.
+- **L67** — Create a checkbox controlling whether the seed is visibly revealed.
 
-
-#### 13.16.5 L65–L96 · run.Scanner.__init__ · section 2
-
+#### 13.16.5 L68–L99 · run.Scanner.__init__
 
 ```python
             show.toggled.connect(
@@ -4651,28 +4655,26 @@ def run(*, image=False):
 
 **Line-by-line explanation**
 
-- **L65–L71** — When the reveal checkbox changes, switch the seed field between normal and masked display. This changes visual presentation, not whether the seed is held in process memory.
-- **L72** — Add the reveal checkbox.
-- **L73–L75** — Create the copy-key button and describe the intended 60-second live clipboard cleanup.
-- **L76** — Disable the button until a valid account has been decoded.
-- **L77** — Connect future clicks to copy\_key.
-- **L78** — Add the copy button.
-- **L79** — Create a label for the currently calculated TOTP and countdown.
-- **L80–L82** — Allow the displayed short-lived code to be selected with the mouse.
-- **L83** — Add the code label.
-- **L84–L88** — Explain the manual KeePassXC import, matching settings, phone comparison and database save; the scanner does not perform that final database write itself.
-- **L89** — Wrap these instructions.
-- **L90** — Add them to the layout.
-- **L91** — Create a media capture session associated with this window.
-- **L92** — Create a video sink that receives camera frames for Python processing.
-- **L93** — Route session video output to that sink.
-- **L94** — Connect each new-frame event to this instance's frame method. This 'connect' is Qt event registration, unrelated to establishing a VPN.
-- **L95** — Create a timer owned by this window.
-- **L96** — Connect each timer event to refresh\_code.
+- **L68–L74** — When the reveal checkbox changes, switch the seed field between normal and masked display. This changes visual presentation, not whether the seed is held in process memory.
+- **L75** — Add the reveal checkbox.
+- **L76–L78** — Create the copy-key button and describe the intended 60-second live clipboard cleanup.
+- **L79** — Disable the button until a valid account has been decoded.
+- **L80** — Connect future clicks to copy\_key.
+- **L81** — Add the copy button.
+- **L82** — Create a label for the currently calculated TOTP and countdown.
+- **L83–L85** — Allow the displayed short-lived code to be selected with the mouse.
+- **L86** — Add the code label.
+- **L87–L91** — Explain the manual KeePassXC import, matching settings, phone comparison and database save; the scanner does not perform that final database write itself.
+- **L92** — Wrap these instructions.
+- **L93** — Add them to the layout.
+- **L94** — Create a media capture session associated with this window.
+- **L95** — Create a video sink that receives camera frames for Python processing.
+- **L96** — Route session video output to that sink.
+- **L97** — Connect each new-frame event to this instance's frame method. This 'connect' is Qt event registration, unrelated to establishing a VPN.
+- **L98** — Create a timer owned by this window.
+- **L99** — Connect each timer event to refresh\_code.
 
-
-#### 13.16.6 L97–L122 · run.Scanner.__init__ · section 3
-
+#### 13.16.6 L100–L125 · run.Scanner.__init__
 
 ```python
             self.timer.start(1000)
@@ -4700,27 +4702,26 @@ def run(*, image=False):
                 )
             )
             self.camera.start()
+
 ```
 
 **Line-by-line explanation**
 
-- **L97** — Run the timer every 1000 milliseconds, updating the current code/countdown once per second.
-- **L98** — Use the run parameter image rather than args.image. In image-only mode choose no cameras and avoid webcam startup; this function no longer parses command-line arguments itself.
-- **L99** — If there are no cameras, fall back to image selection.
-- **L100** — Replace preview text with a prompt to use the image button.
-- **L101–L103** — Explain the image-mode fallback without exposing a decoded setup seed in that status text.
-- **L104** — Return from the window initializer after configuring image-only fallback. The window still exists and can open an image; this does not exit the program.
-- **L105** — Create a camera object for the first detected device, owned by this window.
-- **L106–L110** — Filter advertised camera formats by a practical width range, using a list comprehension.
-- **L111** — Only set a preferred format when the filtered list is nonempty.
-- **L112–L114** — Choose the widest format from that filtered list; no special frame-rate choice is made here.
-- **L115** — Attach the camera to the capture session.
-- **L116–L120** — Update status on camera errors using a callback that ignores extra signal arguments. These are device diagnostics, not seed output.
-- **L121** — Start the camera asynchronously.
+- **L100** — Run the timer every 1000 milliseconds, updating the current code/countdown once per second.
+- **L101** — Use the run parameter image rather than args.image. In image-only mode choose no cameras and avoid webcam startup; this function no longer parses command-line arguments itself.
+- **L102** — If there are no cameras, fall back to image selection.
+- **L103** — Replace preview text with a prompt to use the image button.
+- **L104–L106** — Explain the image-mode fallback without exposing a decoded setup seed in that status text.
+- **L107** — Return from the window initializer after configuring image-only fallback. The window still exists and can open an image; this does not exit the program.
+- **L108** — Create a camera object for the first detected device, owned by this window.
+- **L109–L113** — Filter advertised camera formats by a practical width range, using a list comprehension.
+- **L114** — Only set a preferred format when the filtered list is nonempty.
+- **L115–L117** — Choose the widest format from that filtered list; no special frame-rate choice is made here.
+- **L118** — Attach the camera to the capture session.
+- **L119–L123** — Update status on camera errors using a callback that ignores extra signal arguments. These are device diagnostics, not seed output.
+- **L124** — Start the camera asynchronously.
 
-
-#### 13.16.7 L123–L147 · run.Scanner.open_image
-
+#### 13.16.7 L126–L150 · run.Scanner.open_image
 
 ```python
         def open_image(self):
@@ -4747,29 +4748,28 @@ def run(*, image=False):
                 self.status.setText(
                     "No supported single-entry export QR was found. Use the original full-resolution image and select only TIFR when exporting."
                 )
+
 ```
 
 **Line-by-line explanation**
 
-- **L123** — Define the image-file selection handler.
-- **L124** — If an account has already been accepted, ignore further import requests.
-- **L125** — Ignore another image request after a successful account has already been accepted.
-- **L126** — Check whether this Scanner ever initialized a camera attribute; image-only instances may not have one.
-- **L127** — Stop the camera before opening the file chooser.
-- **L128–L133** — Open the image chooser and keep its selected path, ignoring the selected filter label. An earlier initialized camera is stopped before this chooser.
-- **L134** — An empty path means the user cancelled.
-- **L135** — Return when the file chooser was cancelled. A camera stopped before the chooser is not automatically restarted by this code.
-- **L136** — Load the selected file into a Qt image in memory.
-- **L137** — Check whether image loading failed.
-- **L138–L140** — Show a readable image-load failure rather than attempting QR decoding on an invalid QImage.
-- **L141** — Stop this image attempt after reporting a null/unloadable image.
-- **L142** — Try scanning the loaded image.
-- **L143** — If no account was accepted, provide a more specific single-entry/full-resolution suggestion.
-- **L144–L146** — If no supported account was imported, suggest the full-resolution single-TIFR export image.
+- **L126** — Define the image-file selection handler.
+- **L127** — If an account has already been accepted, ignore further import requests.
+- **L128** — Ignore another image request after a successful account has already been accepted.
+- **L129** — Check whether this Scanner ever initialized a camera attribute; image-only instances may not have one.
+- **L130** — Stop the camera before opening the file chooser.
+- **L131–L136** — Open the image chooser and keep its selected path, ignoring the selected filter label. An earlier initialized camera is stopped before this chooser.
+- **L137** — An empty path means the user cancelled.
+- **L138** — Return when the file chooser was cancelled. A camera stopped before the chooser is not automatically restarted by this code.
+- **L139** — Load the selected file into a Qt image in memory.
+- **L140** — Check whether image loading failed.
+- **L141–L143** — Show a readable image-load failure rather than attempting QR decoding on an invalid QImage.
+- **L144** — Stop this image attempt after reporting a null/unloadable image.
+- **L145** — Try scanning the loaded image.
+- **L146** — If no account was accepted, provide a more specific single-entry/full-resolution suggestion.
+- **L147–L149** — If no supported account was imported, suggest the full-resolution single-TIFR export image.
 
-
-#### 13.16.8 L148–L163 · run.Scanner.frame
-
+#### 13.16.8 L151–L166 · run.Scanner.frame
 
 ```python
         def frame(self, frame):
@@ -4787,23 +4787,22 @@ def run(*, image=False):
                 )
             )
             self.scan_image(image)
+
 ```
 
 **Line-by-line explanation**
 
-- **L148** — Define the per-camera-frame callback. The argument named frame is a Qt video frame, separate from this method's own name.
-- **L149** — Skip work if an account is already accepted, or if fewer than 0.2 seconds elapsed since the last scan. This caps scanning near five attempts per second without blocking the camera's own frame delivery.
-- **L150** — Skip a camera frame when already complete or when fewer than 0.2 seconds have elapsed since the last scan.
-- **L151** — Record the current monotonic time, a clock suitable for elapsed durations because normal wall-clock adjustments do not make it jump backwards.
-- **L152** — Convert the received video frame to a QImage for preview and scanning.
-- **L153** — If conversion produced no usable image, skip it.
-- **L154** — Ignore a video frame that could not be converted into a usable QImage.
-- **L155–L161** — Scale a pixmap smoothly into the preview with aspect ratio preserved; the decoder receives the original image rather than that smaller preview.
-- **L162** — Attempt QR detection on that frame's full image.
+- **L151** — Define the per-camera-frame callback. The argument named frame is a Qt video frame, separate from this method's own name.
+- **L152** — Skip work if an account is already accepted, or if fewer than 0.2 seconds elapsed since the last scan. This caps scanning near five attempts per second without blocking the camera's own frame delivery.
+- **L153** — Skip a camera frame when already complete or when fewer than 0.2 seconds have elapsed since the last scan.
+- **L154** — Record the current monotonic time, a clock suitable for elapsed durations because normal wall-clock adjustments do not make it jump backwards.
+- **L155** — Convert the received video frame to a QImage for preview and scanning.
+- **L156** — If conversion produced no usable image, skip it.
+- **L157** — Ignore a video frame that could not be converted into a usable QImage.
+- **L158–L164** — Scale a pixmap smoothly into the preview with aspect ratio preserved; the decoder receives the original image rather than that smaller preview.
+- **L165** — Attempt QR detection on that frame's full image.
 
-
-#### 13.16.9 L164–L195 · run.Scanner.scan_image · section 1
-
+#### 13.16.9 L167–L198 · run.Scanner.scan_image
 
 ```python
         def scan_image(self, image):
@@ -4813,7 +4812,7 @@ def run(*, image=False):
             )[:, : gray.width()]
             try:
                 results = zxingcpp.read_barcodes(
-                    pixels, formats=zxingcpp.BarcodeFormat.QRCode
+                    pixels, formats=zxingcpp.BarcodeFormats(zxingcpp.BarcodeFormat.QRCode)
                 )
                 for result in results:
                     self.account = decode_export(result.text)
@@ -4842,44 +4841,43 @@ def run(*, image=False):
 
 **Line-by-line explanation**
 
-- **L164** — Define the common scanner used by both camera frames and selected image files.
-- **L165** — Convert to an 8-bit grayscale image, giving one intensity byte per pixel rather than separate red/green/blue channels.
-- **L166–L168** — View grayscale memory as an unsigned-byte array using real row stride, then slice away per-row padding before QR decoding.
-- **L169** — Guard barcode decoding/export parsing so a malformed image/QR does not expose its raw data through an exception report.
-- **L170–L172** — Ask ZXing only for QRCode results; no network operation is involved.
-- **L173** — Loop over detected QR results.
-- **L174** — Parse one QR's text as a supported single-account migration export and save the normalized account.
-- **L175** — Stop scanning further decoded QR results after the first supported account is accepted. A prior unsupported result raising an exception takes the error path instead.
-- **L176–L180** — Catch QR decoder/export parser exceptions and show a safe generic retry instruction instead of raw QR contents.
-- **L181** — If an account was decoded, update the UI into the completed/import-ready state.
-- **L182** — Check whether camera hardware was initialized.
-- **L183** — Stop it immediately after successful decoding.
-- **L184** — Disable choosing another image during this instance's completed state.
-- **L185–L188** — Print a generic local-success message; this specialized interactive tool intentionally prints that message even though the public VPN controller uses optional callbacks for progress.
-- **L189** — Remove the camera image from the preview label.
-- **L190** — Replace it with a camera-off success message.
-- **L191** — Put the sensitive Base32 seed in the read-only masked field. Masking reduces casual viewing, but the value is still stored in GUI/process memory.
-- **L192** — Enable copying the setup seed.
-- **L193** — Begin a status message showing account metadata and TOTP settings.
-- **L194–L195** — Display account/issuer metadata and algorithm/digits/period; the long-term seed stays in the separate masked/read-only field until deliberately revealed/copied.
+- **L167** — Define the common scanner used by both camera frames and selected image files.
+- **L168** — Convert to an 8-bit grayscale image, giving one intensity byte per pixel rather than separate red/green/blue channels.
+- **L169–L171** — View grayscale memory as an unsigned-byte array using real row stride, then slice away per-row padding before QR decoding.
+- **L172** — Guard barcode decoding/export parsing so a malformed image/QR does not expose its raw data through an exception report.
+- **L173** — Ask ZXing only for QRCode results; no network operation is involved.
+- **L174** — Wrap the QRCode format identifier in BarcodeFormats, the selection-object type expected by the installed ZXing API. The pixels are the grayscale NumPy view built above.
+- **L175** — Ask ZXing only for QRCode results; no network operation is involved.
+- **L176** — Loop over detected QR results.
+- **L177** — Parse one QR's text as a supported single-account migration export and save the normalized account.
+- **L178** — Stop scanning further decoded QR results after the first supported account is accepted. A prior unsupported result raising an exception takes the error path instead.
+- **L179–L183** — Catch QR decoder/export parser exceptions and show a safe generic retry instruction instead of raw QR contents.
+- **L184** — If an account was decoded, update the UI into the completed/import-ready state.
+- **L185** — Check whether camera hardware was initialized.
+- **L186** — Stop it immediately after successful decoding.
+- **L187** — Disable choosing another image during this instance's completed state.
+- **L188–L191** — Print a generic local-success message; this specialized interactive tool intentionally prints that message even though the public VPN controller uses optional callbacks for progress.
+- **L192** — Remove the camera image from the preview label.
+- **L193** — Replace it with a camera-off success message.
+- **L194** — Put the sensitive Base32 seed in the read-only masked field. Masking reduces casual viewing, but the value is still stored in GUI/process memory.
+- **L195** — Enable copying the setup seed.
+- **L196** — Begin a status message showing account metadata and TOTP settings.
+- **L197–L198** — Display account/issuer metadata and algorithm/digits/period; the long-term seed stays in the separate masked/read-only field until deliberately revealed/copied.
 
-
-#### 13.16.10 L196–L198 · run.Scanner.scan_image · section 2
-
+#### 13.16.10 L199–L201 · run.Scanner.scan_image
 
 ```python
                 )
                 self.refresh_code()
+
 ```
 
 **Line-by-line explanation**
 
-- **L196** — Close the account/settings status-label update; the separate seed field remains masked until the user chooses to reveal it.
-- **L197** — Update the code/countdown immediately instead of waiting for the next one-second timer event.
+- **L199** — Close the account/settings status-label update; the separate seed field remains masked until the user chooses to reveal it.
+- **L200** — Update the code/countdown immediately instead of waiting for the next one-second timer event.
 
-
-#### 13.16.11 L199–L207 · run.Scanner.refresh_code
-
+#### 13.16.11 L202–L210 · run.Scanner.refresh_code
 
 ```python
         def refresh_code(self):
@@ -4890,54 +4888,55 @@ def run(*, image=False):
                 self.code.setText(
                     f"Current code: {current_code(self.account)}   ({remaining} seconds remaining)"
                 )
+
 ```
 
 **Line-by-line explanation**
 
-- **L199** — Define code-display refresh.
-- **L200** — Only calculate/display a code if an account is available.
-- **L201–L203** — Compute remaining whole seconds in the configured TOTP period using modulo arithmetic.
-- **L204–L206** — Display the locally computed current code and countdown, without fetching codes from a remote server.
+- **L202** — Define code-display refresh.
+- **L203** — Only calculate/display a code if an account is available.
+- **L204–L206** — Compute remaining whole seconds in the configured TOTP period using modulo arithmetic.
+- **L207–L209** — Display the locally computed current code and countdown, without fetching codes from a remote server.
 
-
-#### 13.16.12 L208–L212 · run.Scanner.copy_key
-
+#### 13.16.12 L211–L217 · run.Scanner.copy_key
 
 ```python
         def copy_key(self):
+            if self.account is None:
+                return
             self.copied = self.account["secret"]
-            app.clipboard().setText(self.copied)
+            clipboard.setText(self.copied)
             QTimer.singleShot(60000, self.clear_clipboard)
+
 ```
 
 **Line-by-line explanation**
 
-- **L208** — Define the copy-button handler.
-- **L209** — Remember the seed this window is copying, so cleanup can check ownership of the current clipboard text.
-- **L210** — Put it on the system clipboard for manual paste into KeePassXC. A clipboard manager can retain its own history; clearing the live clipboard cannot revoke independent copies.
-- **L211** — Schedule a one-time clear\_clipboard callback 60,000 milliseconds later. It requires the GUI event loop to keep running normally.
+- **L211** — Define the copy-button handler.
+- **L212** — If no valid account has been decoded, there is no seed to copy; do not index None.
+- **L213** — Return immediately from this handler without changing the clipboard when no account exists.
+- **L214** — Remember the seed this window is copying, so cleanup can check ownership of the current clipboard text.
+- **L215** — Copy this account seed through the verified QApplication clipboard interface. No seed is printed to the terminal.
+- **L216** — Schedule a one-time clear\_clipboard callback 60,000 milliseconds later. It requires the GUI event loop to keep running normally.
 
-
-#### 13.16.13 L213–L217 · run.Scanner.clear_clipboard
-
+#### 13.16.13 L218–L222 · run.Scanner.clear_clipboard
 
 ```python
         def clear_clipboard(self):
-            if self.copied and app.clipboard().text() == self.copied:
-                app.clipboard().clear()
+            if self.copied and clipboard.text() == self.copied:
+                clipboard.clear()
             self.copied = None
+
 ```
 
 **Line-by-line explanation**
 
-- **L213** — Define guarded clipboard cleanup.
-- **L214** — Clear only if this window previously copied a nonempty seed and the current clipboard still equals it. This avoids deleting different text the user copied afterward.
-- **L215** — Clear the current clipboard content.
-- **L216** — Drop the stored copied-value reference after attempting cleanup.
+- **L218** — Define guarded clipboard cleanup.
+- **L219** — Only clear when this window copied a seed and the current clipboard still contains exactly that seed; preserve text copied later by the user.
+- **L220** — Clear the live clipboard after the ownership/content check. Independent clipboard-manager history is outside this operation.
+- **L221** — Drop the stored copied-value reference after attempting cleanup.
 
-
-#### 13.16.14 L218–L228 · run.Scanner.closeEvent
-
+#### 13.16.14 L223–L233 · run.Scanner.closeEvent
 
 ```python
         def closeEvent(self, event):
@@ -4955,51 +4954,50 @@ def run(*, image=False):
 
 **Line-by-line explanation**
 
-- **L218** — Override QWidget's close-event handler so closing the window cleans up devices and displayed state.
-- **L219** — If a camera object exists, stop it.
-- **L220** — Request camera stop.
-- **L221** — Attempt clipboard cleanup immediately rather than waiting for the timer.
-- **L222** — Clear the seed field.
-- **L223** — Drop the normalized account reference. This is not guaranteed secure wiping of every copy of the seed in memory.
-- **L224** — Accept the close event so the window may close.
-- **L226–L228** — Create/show Scanner and synchronously enter Qt's event loop, returning its result after the application exits. Exceptions are handled by the separate CLI adapter.
+- **L223** — Override QWidget's close-event handler so closing the window cleans up devices and displayed state.
+- **L224** — If a camera object exists, stop it.
+- **L225** — Request camera stop.
+- **L226** — Attempt clipboard cleanup immediately rather than waiting for the timer.
+- **L227** — Clear the seed field.
+- **L228** — Drop the normalized account reference. This is not guaranteed secure wiping of every copy of the seed in memory.
+- **L229** — Accept the close event so the window may close.
+- **L231–L233** — Create/show Scanner and synchronously enter Qt's event loop, returning its result after the application exits. Exceptions are handled by the separate CLI adapter.
 
-
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.17 Package source — tests/test_imports.py
 
-
-This test launches a clean interpreter and deliberately makes external work or optional GUI/crypto imports fail. It then imports every package submodule. This tests the refactor’s defining contract: loading a library is safe independently of performing an operation. The embedded script is actual Python text passed to another interpreter, so its inner lines are explained explicitly too.
+A child interpreter is supplied fake dependency interfaces, then imports every application module while subprocess, socket and configuration-read operations are forbidden. This revised test permits the requested module-level imports. It does not claim the real package works without installed native/Python dependencies.
 
 **Functions and their purpose**
 
-- **ImportTests.test\_all\_modules\_import\_with\_no\_optional\_dependencies\_or\_external\_actions**, L10–L46: Start an isolated Python process, block optional GUI/crypto imports and external file/network/process actions, then import every tifrvpn module; require no output and callable public operations.
+- **ImportTests.test_all_modules_import_without_external_actions**, L12–L54: Import all application modules in an isolated child with fake dependency interfaces while blocking application external work.
 
-
-#### 13.17.1 L1–L8 · Module documentation, imports and shared definitions
-
+#### 13.17.1 L1–L10 · Module setup and definitions
 
 ```python
-"""Importing library and GUI modules must be safe without runtime dependencies."""
+"""Module imports load dependencies without starting application operations."""
 
 import subprocess
 import sys
 import unittest
 from pathlib import Path
+
+import tifrvpn
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L1** — Documentation string describing this module/function or embedded program. Text inside a string is data here; embedded scripts execute only when explicitly passed to another interpreter.
-- **L3** — Import subprocess: direct child-program execution, captured output and explicit failure results. Importing a definition is distinct from calling an operation.
-- **L4** — Import sys: interpreter identity, arguments, module loading or output/exit boundaries. Importing a definition is distinct from calling an operation.
-- **L5** — Import unittest: test discovery, isolated test cases and assertions. Importing a definition is distinct from calling an operation.
-- **L6** — Import Path from pathlib for path construction and normalization without shell interpolation. Relative leading dots refer to the package hierarchy, not the shell’s current directory.
+- **L1** — State the current import contract: dependencies may be imported, but importing application modules must not start credential, network, GUI or subprocess operations.
+- **L3** — Import subprocess at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L4** — Import sys at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L5** — Import unittest at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L6** — Bind Path from pathlib at module scope. These names are then available to the functions below without a function-local import.
+- **L8** — Import tifrvpn at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
 
-
-#### 13.17.2 L9–L9 · ImportTests — type/state/test structure
-
+#### 13.17.2 L11–L11 · Module setup and definitions
 
 ```python
 class ImportTests(unittest.TestCase):
@@ -5007,82 +5005,88 @@ class ImportTests(unittest.TestCase):
 
 **Line-by-line explanation**
 
-- **L9** — Define ImportTests as a subclass of unittest.TestCase. Instances inherit that behavior; the enclosed methods provide this test or application’s particular implementation.
+- **L11** — Define ImportTests as a subclass of unittest.TestCase. Instances inherit that behavior; the enclosed methods provide this test or application’s particular implementation.
 
-
-#### 13.17.3 L10–L41 · ImportTests.test_all_modules_import_with_no_optional_dependencies_or_external_actions · section 1
-
+#### 13.17.3 L12–L43 · ImportTests.test_all_modules_import_without_external_actions
 
 ```python
-    def test_all_modules_import_with_no_optional_dependencies_or_external_actions(self):
-        import tifrvpn
-
+    def test_all_modules_import_without_external_actions(self):
         package_root = str(Path(tifrvpn.__file__).resolve().parent.parent)
         script = """
 import sys
 sys.path.insert(0, sys.argv[1])
-import importlib.abc
 import pathlib
 import pkgutil
 import socket
 import subprocess
+from types import ModuleType
 from unittest.mock import patch
-class BlockOptional(importlib.abc.MetaPathFinder):
-    def find_spec(self, fullname, path=None, target=None):
-        if fullname.split(".")[0] in {"gi", "PySide6", "numpy", "zxingcpp", "cryptography"}:
-            raise AssertionError("Optional dependency loaded: " + fullname)
-sys.meta_path.insert(0, BlockOptional())
 def forbidden(*args, **kwargs):
     raise AssertionError("External operation during import")
+# Supply dependency interfaces without running third-party initialization.
+# Importing a name is allowed; calling it to start an operation is not.
+for name in (
+    "gi", "gi.repository", "cryptography", "cryptography.hazmat",
+    "cryptography.hazmat.primitives", "cryptography.hazmat.primitives.serialization",
+    "PySide6", "PySide6.QtCore", "PySide6.QtGui", "PySide6.QtWidgets",
+    "PySide6.QtMultimedia", "numpy", "zxingcpp",
+):
+    module = ModuleType(name)
+    module.__path__ = []
+    module.__getattr__ = lambda name: forbidden
+    sys.modules[name] = module
+sys.modules["gi"].require_version = lambda *args: None
 with patch.object(subprocess, "run", forbidden), patch.object(subprocess, "Popen", forbidden), \\
         patch.object(socket, "create_connection", forbidden), patch.object(pathlib.Path, "read_text", forbidden):
     import tifrvpn
     for module in pkgutil.walk_packages(tifrvpn.__path__, "tifrvpn."):
         __import__(module.name)
     assert callable(tifrvpn.connect)
+```
+
+**Line-by-line explanation**
+
+- **L12** — Test application import behavior in a separate isolated interpreter with supplied fake dependency interfaces.
+- **L13** — Locate the imported package's parent directory explicitly for the isolated subprocess, rather than relying on cwd or installed third-party dependencies.
+- **L14** — Begin an embedded Python script string. Lines inside the string will execute in a separate interpreter when subprocess.run invokes -c below, not as part of this outer test's immediate flow.
+- **L15** — Inside the child script, import interpreter/search-path access.
+- **L16** — Insert only the explicitly supplied package root into the child search path. The test intentionally uses -I -S so neither normal PYTHONPATH nor site-package startup explains a passing import.
+- **L17** — Load filesystem path helpers so file-reading can be replaced with a forbidden function.
+- **L18** — Load package discovery to enumerate every tifrvpn submodule, including GUI and worker entry modules.
+- **L19** — Load socket APIs so attempted live connections during import can be blocked.
+- **L20** — Load subprocess APIs so attempted child startup during import can be blocked.
+- **L21** — Inside the child-script string, import ModuleType so the test can create fake dependency module objects.
+- **L22** — Load patch for temporary runtime substitutions within the child test script.
+- **L23** — Define a replacement callable accepting arbitrary arguments for prohibited external operations.
+- **L24** — Raise immediately if module import attempts to run a child, open a socket or read configuration text.
+- **L25** — Explain why the child script supplies dependency interfaces: avoid native library initialization while inspecting application import behavior.
+- **L26** — Allow importing dependency names, but arrange for calls that start operations to fail the test.
+- **L27** — Iterate through the dependency module names to supply in the child interpreter.
+- **L28** — Supply GI and cryptography package interfaces; these are fake module identities only.
+- **L29** — Supply the nested cryptography namespaces imported by the network backend.
+- **L30** — Supply the Qt modules imported by the command adapters and GUI helpers.
+- **L31** — Also supply multimedia, NumPy and ZXing interfaces required by the QR importer.
+- **L32** — Finish the dependency-name list and begin creating each fake module.
+- **L33** — Create an empty module object carrying that dependency name.
+- **L34** — Mark it as package-like so nested imports can be resolved from the supplied fake modules.
+- **L35** — Make missing imported attributes resolve to the forbidden callable. Looking up a name succeeds; invoking it to perform work fails.
+- **L36** — Register this fake under its import name in the child interpreter module cache.
+- **L37** — Permit GI namespace-version selection during import; this fake returns None and does not load native bindings.
+- **L38–L39** — Temporarily replace subprocess.run/Popen, socket.create\_connection and Path.read\_text with that forbidden callable while importing the package tree.
+- **L40** — Import the public package under all these restrictions.
+- **L41** — Discover its nested modules with fully qualified tifrvpn. names.
+- **L42** — Import each discovered module, including private worker and optional GUI modules, without calling their operations.
+- **L43** — Require the public connect name to exist as a callable without actually connecting.
+
+#### 13.17.4 L44–L54 · ImportTests.test_all_modules_import_without_external_actions
+
+```python
     assert callable(tifrvpn.disconnect)
 """
         result = subprocess.run(
             [sys.executable, "-I", "-S", "-c", script, package_root],
             check=False,
             cwd="/",
-```
-
-**Line-by-line explanation**
-
-- **L10** — Define test\_all\_modules\_import\_with\_no\_optional\_dependencies\_or\_external\_actions(self). Start an isolated Python process, block optional GUI/crypto imports and external file/network/process actions, then import every tifrvpn module; require no output and callable public operations.
-- **L11** — Import tifrvpn: the module’s named helpers used below. Importing a definition is distinct from calling an operation.
-- **L13** — Locate the imported package's parent directory explicitly for the isolated subprocess, rather than relying on cwd or installed third-party dependencies.
-- **L14** — Begin an embedded Python script string. Lines inside the string will execute in a separate interpreter when subprocess.run invokes -c below, not as part of this outer test's immediate flow.
-- **L15** — Inside the child script, import interpreter/search-path access.
-- **L16** — Insert only the explicitly supplied package root into the child search path. The test intentionally uses -I -S so neither normal PYTHONPATH nor site-package startup explains a passing import.
-- **L17** — Load the abstract import-hook machinery for a deliberate optional-dependency blocker.
-- **L18** — Load filesystem path helpers so file-reading can be replaced with a forbidden function.
-- **L19** — Load package discovery to enumerate every tifrvpn submodule, including GUI and worker entry modules.
-- **L20** — Load socket APIs so attempted live connections during import can be blocked.
-- **L21** — Load subprocess APIs so attempted child startup during import can be blocked.
-- **L22** — Load patch for temporary runtime substitutions within the child test script.
-- **L23** — Define a custom module-finder hook that rejects the optional runtime libraries.
-- **L24** — Implement the import system's find\_spec hook; fullname is the requested module name.
-- **L25** — If the top-level requested name is gi, PySide6, numpy, zxingcpp or cryptography, treat that as an import-safety violation.
-- **L26** — Raise an assertion naming the forbidden optional module, causing the child test to fail instead of quietly loading it.
-- **L27** — Put the blocker first in sys.meta\_path so it sees these import attempts before normal finders.
-- **L28** — Define a replacement callable accepting arbitrary arguments for prohibited external operations.
-- **L29** — Raise immediately if module import attempts to run a child, open a socket or read configuration text.
-- **L30–L31** — Temporarily replace subprocess.run/Popen, socket.create\_connection and Path.read\_text with that forbidden callable while importing the package tree.
-- **L32** — Import the public package under all these restrictions.
-- **L33** — Discover its nested modules with fully qualified tifrvpn. names.
-- **L34** — Import each discovered module, including private worker and optional GUI modules, without calling their operations.
-- **L35** — Require the public connect name to exist as a callable without actually connecting.
-- **L36** — Require the public disconnect name similarly.
-- **L37** — Close the embedded script string; the outer test resumes here.
-- **L38–L41** — Launch the same Python interpreter with -I (isolate environment/user path), -S (skip site initialization), -c (execute embedded text), explicit package-root argument and cwd=/; capture results instead of displaying them.
-
-
-#### 13.17.4 L42–L46 · ImportTests.test_all_modules_import_with_no_optional_dependencies_or_external_actions · section 2
-
-
-```python
             capture_output=True,
             text=True,
         )
@@ -5092,12 +5096,13 @@ with patch.object(subprocess, "run", forbidden), patch.object(subprocess, "Popen
 
 **Line-by-line explanation**
 
-- **L42–L44** — Launch the same Python interpreter with -I (isolate environment/user path), -S (skip site initialization), -c (execute embedded text), explicit package-root argument and cwd=/; capture results instead of displaying them.
-- **L45** — Require successful child exit and show stderr only if the assertion fails.
-- **L46** — Require import discovery to print no normal output.
+- **L44** — Require the public disconnect name similarly.
+- **L45** — Close the embedded script string; the outer test resumes here.
+- **L46–L52** — Launch the same Python interpreter with -I (isolate environment/user path), -S (skip site initialization), -c (execute embedded text), explicit package-root argument and cwd=/; capture results instead of displaying them.
+- **L53** — Require successful child exit and show stderr only if the assertion fails.
+- **L54** — Require import discovery to print no normal output.
 
-
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.18 Package source — tests/test_vpn.py
 
@@ -5455,28 +5460,25 @@ class VPNTests(unittest.TestCase):
 - **L132** — Require self.nm.deactivate.called to equal changed. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
 
 
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.19 Package source — tests/test_cli.py
-
 
 Offline regression checks for cli. Each test purpose below explains its fake inputs, required behavior and protected side effects. Tests use mocks/temporary resources; their assertions and example strings are not personal account data.
 
 **Functions and their purpose**
 
-- **CLITests.run\_cli**, L14–L18: Capture both CLI output streams while calling cli.main with explicit arguments, then return status/stdout/stderr for assertions.
-- **CLITests.test\_option\_order\_and\_forwarding**, L20–L44: Exercise accepted connect/quiet orders and status/disconnect dispatch; verify the correct library function receives the boolean flag and CLI callback.
-- **CLITests.test\_invalid\_options\_fail\_before\_any\_operations**, L46–L61: Try incompatible flags, duplicate actions and unknown options; require status 2, stderr explanation, no stdout and no connect operation.
-- **CLITests.test\_help\_needs\_no\_networkmanager**, L63–L67: Check both help spellings using a backend that would fail if called; require exact help output and success without querying connection state.
-- **CLITests.test\_toggle\_preserves\_transitional\_state\_behavior**, L69–L88: Fake active/activating/deactivated/empty states and require no-argument toggle to preserve main's disconnect-versus-connect decisions.
-- **CLITests.test\_status\_exit\_codes\_and\_details**, L90–L105: Convert structured not-configured, inactive, transitional and active statuses to the appropriate CLI code; active output must include returned details.
-- **CLITests.test\_failure\_exit\_code\_is\_preserved**, L107–L111: Raise a backend NetworkManagerError with returncode=10 and require CLI code 10 with the safe expected stderr message.
-- **CLITests.test\_connect\_notification\_only\_when\_tunnel\_was\_started**, L113–L124: Vary VPNStatus.changed and require a successful connect notification only when this operation actually started the tunnel.
-- **CLITests.test\_otp\_does\_not\_dump\_unexpected\_error\_details**, L126–L134: Raise an OS error containing an invented password string during config loading; require a generic OTP failure that omits that string.
+- **CLITests.run_cli**, L15–L19: Capture both CLI output streams while calling cli.main with explicit arguments, then return status/stdout/stderr for assertions.
+- **CLITests.test_option_order_and_forwarding**, L21–L45: Exercise accepted connect/quiet orders and status/disconnect dispatch; verify the correct library function receives the boolean flag and CLI callback.
+- **CLITests.test_invalid_options_fail_before_any_operations**, L47–L62: Try incompatible flags, duplicate actions and unknown options; require status 2, stderr explanation, no stdout and no connect operation.
+- **CLITests.test_help_needs_no_networkmanager**, L64–L68: Check both help spellings using a backend that would fail if called; require exact help output and success without querying connection state.
+- **CLITests.test_toggle_preserves_transitional_state_behavior**, L70–L87: Fake active/activating/deactivated/empty states and require no-argument toggle to preserve main's disconnect-versus-connect decisions.
+- **CLITests.test_status_exit_codes_and_details**, L89–L104: Convert structured not-configured, inactive, transitional and active statuses to the appropriate CLI code; active output must include returned details.
+- **CLITests.test_failure_exit_code_is_preserved**, L106–L110: Raise a backend NetworkManagerError with returncode=10 and require CLI code 10 with the safe expected stderr message.
+- **CLITests.test_connect_notification_only_when_tunnel_was_started**, L112–L123: Vary VPNStatus.changed and require a successful connect notification only when this operation actually started the tunnel.
+- **CLITests.test_otp_does_not_dump_unexpected_error_details**, L125–L133: Raise an OS error containing an invented password string during config loading; require a generic OTP failure that omits that string.
 
-
-#### 13.19.1 L1–L12 · Module documentation, imports and shared definitions
-
+#### 13.19.1 L1–L13 · Module setup and definitions
 
 ```python
 """Command dispatch and output checks, without accessing desktop services."""
@@ -5487,24 +5489,26 @@ import unittest
 from unittest.mock import patch
 
 from tifrvpn import cli
+from tifrvpn import networkmanager as nm
 from tifrvpn.errors import NetworkManagerError
 from tifrvpn.vpn import VPNStatus
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L1** — Documentation string describing this module/function or embedded program. Text inside a string is data here; embedded scripts execute only when explicitly passed to another interpreter.
-- **L3** — Import contextlib: temporary output redirection and context-manager cleanup. Importing a definition is distinct from calling an operation.
-- **L4** — Import io: in-memory text/byte streams for harmless example output. Importing a definition is distinct from calling an operation.
-- **L5** — Import unittest: test discovery, isolated test cases and assertions. Importing a definition is distinct from calling an operation.
-- **L6** — Import patch from unittest.mock for temporary function/environment replacements and recording fake calls. Relative leading dots refer to the package hierarchy, not the shell’s current directory.
-- **L8** — Import cli from tifrvpn for shared package definitions used by this module. Relative leading dots refer to the package hierarchy, not the shell’s current directory.
-- **L9** — Import NetworkManagerError from tifrvpn.errors for shared package definitions used by this module. Relative leading dots refer to the package hierarchy, not the shell’s current directory.
-- **L10** — Import VPNStatus from tifrvpn.vpn for shared package definitions used by this module. Relative leading dots refer to the package hierarchy, not the shell’s current directory.
+- **L1** — Document this module responsibility and when its actual application operations run; this string does not execute those operations.
+- **L3** — Import contextlib at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L4** — Import io at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L5** — Import unittest at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L6** — Bind patch from unittest.mock at module scope. These names are then available to the functions below without a function-local import.
+- **L8** — Bind cli from tifrvpn at module scope. These names are then available to the functions below without a function-local import.
+- **L9** — Bind networkmanager as nm from tifrvpn at module scope. These names are then available to the functions below without a function-local import.
+- **L10** — Bind NetworkManagerError from tifrvpn.errors at module scope. These names are then available to the functions below without a function-local import.
+- **L11** — Bind VPNStatus from tifrvpn.vpn at module scope. These names are then available to the functions below without a function-local import.
 
-
-#### 13.19.2 L13–L13 · CLITests — type/state/test structure
-
+#### 13.19.2 L14–L14 · Module setup and definitions
 
 ```python
 class CLITests(unittest.TestCase):
@@ -5512,11 +5516,9 @@ class CLITests(unittest.TestCase):
 
 **Line-by-line explanation**
 
-- **L13** — Define CLITests as a subclass of unittest.TestCase. Instances inherit that behavior; the enclosed methods provide this test or application’s particular implementation.
+- **L14** — Define CLITests as a subclass of unittest.TestCase. Instances inherit that behavior; the enclosed methods provide this test or application’s particular implementation.
 
-
-#### 13.19.3 L14–L19 · CLITests.run_cli
-
+#### 13.19.3 L15–L20 · CLITests.run_cli
 
 ```python
     def run_cli(self, arguments):
@@ -5524,19 +5526,18 @@ class CLITests(unittest.TestCase):
         with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
             code = cli.main(arguments)
         return code, stdout.getvalue(), stderr.getvalue()
+
 ```
 
 **Line-by-line explanation**
 
-- **L14** — Define run\_cli(self, arguments). Capture both CLI output streams while calling cli.main with explicit arguments, then return status/stdout/stderr for assertions.
-- **L15** — Prepare (stdout, stderr) as the displayed structured example data, state or ordered fake-outcome collection. It is a Python value, not a shell command string; the surrounding test/function explains why these entries are selected.
-- **L16** — Temporarily route Python output into the selected in-memory buffer for assertions; this context does not change a real vault or VPN. Temporarily route Python output into the selected in-memory buffer for assertions; this context does not change a real vault or VPN.
-- **L17** — Store the result as code. Call cli.main with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
-- **L18** — Return (code, stdout.getvalue(), stderr.getvalue()) from this function. A library return is ordinary data; CLI adapters separately interpret integer exit results.
+- **L15** — Define run\_cli(self, arguments). Capture both CLI output streams while calling cli.main with explicit arguments, then return status/stdout/stderr for assertions.
+- **L16** — Prepare (stdout, stderr) as the displayed structured example data, state or ordered fake-outcome collection. It is a Python value, not a shell command string; the surrounding test/function explains why these entries are selected.
+- **L17** — Temporarily route Python output into the selected in-memory buffer for assertions; this context does not change a real vault or VPN. Temporarily route Python output into the selected in-memory buffer for assertions; this context does not change a real vault or VPN.
+- **L18** — Store the result as code. Call cli.main with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
+- **L19** — Return (code, stdout.getvalue(), stderr.getvalue()) from this function. A library return is ordinary data; CLI adapters separately interpret integer exit results.
 
-
-#### 13.19.4 L20–L45 · CLITests.test_option_order_and_forwarding
-
+#### 13.19.4 L21–L46 · CLITests.test_option_order_and_forwarding
 
 ```python
     def test_option_order_and_forwarding(self):
@@ -5564,25 +5565,24 @@ class CLITests(unittest.TestCase):
         ) as status:
             self.assertEqual(self.run_cli(["-s"])[0], 0)
             status.assert_called_once()
+
 ```
 
 **Line-by-line explanation**
 
-- **L20** — Define test\_option\_order\_and\_forwarding(self). Exercise accepted connect/quiet orders and status/disconnect dispatch; verify the correct library function receives the boolean flag and CLI callback.
-- **L21–L26** — For each (args, quiet) in \[(\['-c', '--quiet'\], True), (\['--quiet', '-c'\], True), (\['--quiet'\], True), (\['-c'\], False)\], run the indented body. In tests, this checks every listed case rather than a single happy path.
-- **L27–L32** — Label this loop iteration as its own subtest so failures identify the particular argument/state/input case while other cases still run. Temporarily replace cli.vpn, 'connect' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit.
-- **L33** — Require self.run\_cli(args)\[0\] to equal 0. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
-- **L34** — Check the recorded call to connect used the specified positional/keyword arguments exactly once.
-- **L35–L37** — Temporarily replace cli.vpn, 'disconnect' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit.
-- **L38** — Require self.run\_cli(\['-d'\])\[0\] to equal 0. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
-- **L39** — Require exactly one call to disconnect, detecting accidental repeated operations.
-- **L40–L42** — Temporarily replace cli.vpn, 'status' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit.
-- **L43** — Require self.run\_cli(\['-s'\])\[0\] to equal 0. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
-- **L44** — Require exactly one call to status, detecting accidental repeated operations.
+- **L21** — Define test\_option\_order\_and\_forwarding(self). Exercise accepted connect/quiet orders and status/disconnect dispatch; verify the correct library function receives the boolean flag and CLI callback.
+- **L22–L27** — For each (args, quiet) in \[(\['-c', '--quiet'\], True), (\['--quiet', '-c'\], True), (\['--quiet'\], True), (\['-c'\], False)\], run the indented body. In tests, this checks every listed case rather than a single happy path.
+- **L28–L33** — Label this loop iteration as its own subtest so failures identify the particular argument/state/input case while other cases still run. Temporarily replace cli.vpn, 'connect' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit.
+- **L34** — Require self.run\_cli(args)\[0\] to equal 0. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L35** — Check the recorded call to connect used the specified positional/keyword arguments exactly once.
+- **L36–L38** — Temporarily replace cli.vpn, 'disconnect' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit.
+- **L39** — Require self.run\_cli(\['-d'\])\[0\] to equal 0. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L40** — Require exactly one call to disconnect, detecting accidental repeated operations.
+- **L41–L43** — Temporarily replace cli.vpn, 'status' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit.
+- **L44** — Require self.run\_cli(\['-s'\])\[0\] to equal 0. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L45** — Require exactly one call to status, detecting accidental repeated operations.
 
-
-#### 13.19.5 L46–L62 · CLITests.test_invalid_options_fail_before_any_operations
-
+#### 13.19.5 L47–L63 · CLITests.test_invalid_options_fail_before_any_operations
 
 ```python
     def test_invalid_options_fail_before_any_operations(self):
@@ -5601,22 +5601,21 @@ class CLITests(unittest.TestCase):
                 self.assertEqual(out, "")
                 self.assertTrue(err)
                 connect.assert_not_called()
+
 ```
 
 **Line-by-line explanation**
 
-- **L46** — Define test\_invalid\_options\_fail\_before\_any\_operations(self). Try incompatible flags, duplicate actions and unknown options; require status 2, stderr explanation, no stdout and no connect operation.
-- **L47–L55** — For each args in (\['--quiet', '-d'\], \['-s', '--quiet'\], \['--quiet', '--setup'\], \['-c', '-s'\], \['--unknown'\], \['-h', '--quiet'\], \['-c', '-c'\]), run the indented body. In tests, this checks every listed case rather than a single happy path.
-- **L56** — Label this loop iteration as its own subtest so failures identify the particular argument/state/input case while other cases still run. Temporarily replace cli.vpn, 'connect' for this context so the real external operation/environment does not run. The patch is restored on block exit.
-- **L57** — Store the result as (code, out, err). Call self.run\_cli with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
-- **L58** — Require code to equal 2. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
-- **L59** — Require out to equal ''. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
-- **L60** — Require err to evaluate as true; this is an assertion about the tested behavior, not a real connection request.
-- **L61** — Check that connect was never invoked, proving rejection/bypass happened before that side effect.
+- **L47** — Define test\_invalid\_options\_fail\_before\_any\_operations(self). Try incompatible flags, duplicate actions and unknown options; require status 2, stderr explanation, no stdout and no connect operation.
+- **L48–L56** — For each args in (\['--quiet', '-d'\], \['-s', '--quiet'\], \['--quiet', '--setup'\], \['-c', '-s'\], \['--unknown'\], \['-h', '--quiet'\], \['-c', '-c'\]), run the indented body. In tests, this checks every listed case rather than a single happy path.
+- **L57** — Label this loop iteration as its own subtest so failures identify the particular argument/state/input case while other cases still run. Temporarily replace cli.vpn, 'connect' for this context so the real external operation/environment does not run. The patch is restored on block exit.
+- **L58** — Store the result as (code, out, err). Call self.run\_cli with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
+- **L59** — Require code to equal 2. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L60** — Require out to equal ''. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L61** — Require err to evaluate as true; this is an assertion about the tested behavior, not a real connection request.
+- **L62** — Check that connect was never invoked, proving rejection/bypass happened before that side effect.
 
-
-#### 13.19.6 L63–L68 · CLITests.test_help_needs_no_networkmanager
-
+#### 13.19.6 L64–L69 · CLITests.test_help_needs_no_networkmanager
 
 ```python
     def test_help_needs_no_networkmanager(self):
@@ -5624,24 +5623,21 @@ class CLITests(unittest.TestCase):
             for args in (["--help"], ["-h"]):
                 code, out, err = self.run_cli(args)
                 self.assertEqual((code, out, err), (0, cli.HELP + "\n", ""))
+
 ```
 
 **Line-by-line explanation**
 
-- **L63** — Define test\_help\_needs\_no\_networkmanager(self). Check both help spellings using a backend that would fail if called; require exact help output and success without querying connection state.
-- **L64** — Temporarily replace cli.vpn, 'status' for this context so the real external operation/environment does not run. Simulate the supplied exception, callback or sequence of outcomes. The patch is restored on block exit.
-- **L65** — For each args in (\['--help'\], \['-h'\]), run the indented body. In tests, this checks every listed case rather than a single happy path.
-- **L66** — Store the result as (code, out, err). Call self.run\_cli with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
-- **L67** — Require (code, out, err) to equal (0, cli.HELP + '\\n', ''). If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L64** — Define test\_help\_needs\_no\_networkmanager(self). Check both help spellings using a backend that would fail if called; require exact help output and success without querying connection state.
+- **L65** — Temporarily replace cli.vpn, 'status' for this context so the real external operation/environment does not run. Simulate the supplied exception, callback or sequence of outcomes. The patch is restored on block exit.
+- **L66** — For each args in (\['--help'\], \['-h'\]), run the indented body. In tests, this checks every listed case rather than a single happy path.
+- **L67** — Store the result as (code, out, err). Call self.run\_cli with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
+- **L68** — Require (code, out, err) to equal (0, cli.HELP + '\\n', ''). If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
 
-
-#### 13.19.7 L69–L89 · CLITests.test_toggle_preserves_transitional_state_behavior
-
+#### 13.19.7 L70–L88 · CLITests.test_toggle_preserves_transitional_state_behavior
 
 ```python
     def test_toggle_preserves_transitional_state_behavior(self):
-        from tifrvpn import networkmanager as nm
-
         for state, connects in [
             ("activated", False),
             ("activating", False),
@@ -5659,21 +5655,19 @@ class CLITests(unittest.TestCase):
                 self.assertEqual(self.run_cli([])[0], 0)
                 self.assertEqual(connect.called, connects)
                 self.assertEqual(disconnect.called, not connects)
+
 ```
 
 **Line-by-line explanation**
 
-- **L69** — Define test\_toggle\_preserves\_transitional\_state\_behavior(self). Fake active/activating/deactivated/empty states and require no-argument toggle to preserve main's disconnect-versus-connect decisions.
-- **L70** — Import networkmanager as nm from tifrvpn for shared package definitions used by this module. Relative leading dots refer to the package hierarchy, not the shell’s current directory.
-- **L72–L77** — For each (state, connects) in \[('activated', False), ('activating', False), ('deactivated', True), ('', True)\], run the indented body. In tests, this checks every listed case rather than a single happy path.
-- **L78–L85** — Label this loop iteration as its own subtest so failures identify the particular argument/state/input case while other cases still run. Temporarily replace nm, 'require\_available' for this context so the real external operation/environment does not run. The patch is restored on block exit. Temporarily replace nm, 'profile\_uuid' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit. Temporarily replace nm, 'state' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit. Temporarily replace cli, '\_connect' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit. Temporarily replace cli, '\_disconnect' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit.
-- **L86** — Require self.run\_cli(\[\])\[0\] to equal 0. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
-- **L87** — Require connect.called to equal connects. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
-- **L88** — Require disconnect.called to equal not connects. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L70** — Define test\_toggle\_preserves\_transitional\_state\_behavior(self). Fake active/activating/deactivated/empty states and require no-argument toggle to preserve main's disconnect-versus-connect decisions.
+- **L71–L76** — For each (state, connects) in \[('activated', False), ('activating', False), ('deactivated', True), ('', True)\], run the indented body. In tests, this checks every listed case rather than a single happy path.
+- **L77–L84** — Label this loop iteration as its own subtest so failures identify the particular argument/state/input case while other cases still run. Temporarily replace nm, 'require\_available' for this context so the real external operation/environment does not run. The patch is restored on block exit. Temporarily replace nm, 'profile\_uuid' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit. Temporarily replace nm, 'state' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit. Temporarily replace cli, '\_connect' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit. Temporarily replace cli, '\_disconnect' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit.
+- **L85** — Require self.run\_cli(\[\])\[0\] to equal 0. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L86** — Require connect.called to equal connects. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L87** — Require disconnect.called to equal not connects. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
 
-
-#### 13.19.8 L90–L106 · CLITests.test_status_exit_codes_and_details
-
+#### 13.19.8 L89–L105 · CLITests.test_status_exit_codes_and_details
 
 ```python
     def test_status_exit_codes_and_details(self):
@@ -5692,22 +5686,21 @@ class CLITests(unittest.TestCase):
                 self.assertEqual(err, "")
                 if result.connected:
                     self.assertIn(result.details, out)
+
 ```
 
 **Line-by-line explanation**
 
-- **L90** — Define test\_status\_exit\_codes\_and\_details(self). Convert structured not-configured, inactive, transitional and active statuses to the appropriate CLI code; active output must include returned details.
-- **L91–L96** — For each (result, expected) in \[(VPNStatus('not-configured'), 1), (VPNStatus('deactivated'), 1), (VPNStatus('activating'), 1), (VPNStatus('activated', details='GENERAL.DEVICES: tun0'), 0)\], run the indented body. In tests, this checks every listed case rather than a single happy path.
-- **L97–L100** — Label this loop iteration as its own subtest so failures identify the particular argument/state/input case while other cases still run. Temporarily replace cli.vpn, 'status' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit.
-- **L101** — Store the result as (code, out, err). Call self.run\_cli with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
-- **L102** — Require code to equal expected. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
-- **L103** — Require err to equal ''. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
-- **L104** — Only run this branch when result.connected is true. The following indented statements implement that condition’s case; later else/elif handles alternatives.
-- **L105** — Require result.details to be present in out. The test inspects data/captured calls rather than trusting printed progress alone.
+- **L89** — Define test\_status\_exit\_codes\_and\_details(self). Convert structured not-configured, inactive, transitional and active statuses to the appropriate CLI code; active output must include returned details.
+- **L90–L95** — For each (result, expected) in \[(VPNStatus('not-configured'), 1), (VPNStatus('deactivated'), 1), (VPNStatus('activating'), 1), (VPNStatus('activated', details='GENERAL.DEVICES: tun0'), 0)\], run the indented body. In tests, this checks every listed case rather than a single happy path.
+- **L96–L99** — Label this loop iteration as its own subtest so failures identify the particular argument/state/input case while other cases still run. Temporarily replace cli.vpn, 'status' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit.
+- **L100** — Store the result as (code, out, err). Call self.run\_cli with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
+- **L101** — Require code to equal expected. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L102** — Require err to equal ''. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L103** — Only run this branch when result.connected is true. The following indented statements implement that condition’s case; later else/elif handles alternatives.
+- **L104** — Require result.details to be present in out. The test inspects data/captured calls rather than trusting printed progress alone.
 
-
-#### 13.19.9 L107–L112 · CLITests.test_failure_exit_code_is_preserved
-
+#### 13.19.9 L106–L111 · CLITests.test_failure_exit_code_is_preserved
 
 ```python
     def test_failure_exit_code_is_preserved(self):
@@ -5715,17 +5708,16 @@ class CLITests(unittest.TestCase):
             cli.vpn, "connect", side_effect=NetworkManagerError("failed", returncode=10)
         ):
             self.assertEqual(self.run_cli(["-c"]), (10, "", "tifr VPN: failed\n"))
+
 ```
 
 **Line-by-line explanation**
 
-- **L107** — Define test\_failure\_exit\_code\_is\_preserved(self). Raise a backend NetworkManagerError with returncode=10 and require CLI code 10 with the safe expected stderr message.
-- **L108–L110** — Temporarily replace cli.vpn, 'connect' for this context so the real external operation/environment does not run. Simulate the supplied exception, callback or sequence of outcomes. The patch is restored on block exit.
-- **L111** — Require self.run\_cli(\['-c'\]) to equal (10, '', 'tifr VPN: failed\\n'). If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L106** — Define test\_failure\_exit\_code\_is\_preserved(self). Raise a backend NetworkManagerError with returncode=10 and require CLI code 10 with the safe expected stderr message.
+- **L107–L109** — Temporarily replace cli.vpn, 'connect' for this context so the real external operation/environment does not run. Simulate the supplied exception, callback or sequence of outcomes. The patch is restored on block exit.
+- **L110** — Require self.run\_cli(\['-c'\]) to equal (10, '', 'tifr VPN: failed\\n'). If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
 
-
-#### 13.19.10 L113–L125 · CLITests.test_connect_notification_only_when_tunnel_was_started
-
+#### 13.19.10 L112–L124 · CLITests.test_connect_notification_only_when_tunnel_was_started
 
 ```python
     def test_connect_notification_only_when_tunnel_was_started(self):
@@ -5740,19 +5732,18 @@ class CLITests(unittest.TestCase):
             ):
                 self.assertEqual(self.run_cli(["-c"])[0], 0)
                 self.assertEqual(notify.called, changed)
+
 ```
 
 **Line-by-line explanation**
 
-- **L113** — Define test\_connect\_notification\_only\_when\_tunnel\_was\_started(self). Vary VPNStatus.changed and require a successful connect notification only when this operation actually started the tunnel.
-- **L114** — For each changed in (False, True), run the indented body. In tests, this checks every listed case rather than a single happy path.
-- **L115–L122** — Temporarily replace cli.vpn, 'connect' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit. Temporarily replace cli, '\_notify' for this context so the real external operation/environment does not run. The patch is restored on block exit.
-- **L123** — Require self.run\_cli(\['-c'\])\[0\] to equal 0. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
-- **L124** — Require notify.called to equal changed. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L112** — Check that a successful newly established connection sends a desktop notification, while an already connected result does not send a duplicate.
+- **L113** — For each changed in (False, True), run the indented body. In tests, this checks every listed case rather than a single happy path.
+- **L114–L121** — Temporarily replace cli.vpn, 'connect' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit. Temporarily replace cli, '\_notify' for this context so the real external operation/environment does not run. The patch is restored on block exit.
+- **L122** — Require self.run\_cli(\['-c'\])\[0\] to equal 0. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L123** — Require notify.called to equal changed. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
 
-
-#### 13.19.11 L126–L134 · CLITests.test_otp_does_not_dump_unexpected_error_details
-
+#### 13.19.11 L125–L133 · CLITests.test_otp_does_not_dump_unexpected_error_details
 
 ```python
     def test_otp_does_not_dump_unexpected_error_details(self):
@@ -5768,13 +5759,12 @@ class CLITests(unittest.TestCase):
 
 **Line-by-line explanation**
 
-- **L126** — Define test\_otp\_does\_not\_dump\_unexpected\_error\_details(self). Raise an OS error containing an invented password string during config loading; require a generic OTP failure that omits that string.
-- **L127–L132** — Temporarily replace cli, 'load\_config' for this context so the real external operation/environment does not run. Simulate the supplied exception, callback or sequence of outcomes. The patch is restored on block exit. Temporarily route Python output into the selected in-memory buffer for assertions; this context does not change a real vault or VPN.
-- **L133** — Require cli.otp\_main(\[\]) to equal 1. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
-- **L134** — Require 'example-master-password' to be absent from output.getvalue(). The test inspects data/captured calls rather than trusting printed progress alone.
+- **L125** — Define test\_otp\_does\_not\_dump\_unexpected\_error\_details(self). Raise an OS error containing an invented password string during config loading; require a generic OTP failure that omits that string.
+- **L126–L131** — Temporarily replace cli, 'load\_config' for this context so the real external operation/environment does not run. Simulate the supplied exception, callback or sequence of outcomes. The patch is restored on block exit. Temporarily route Python output into the selected in-memory buffer for assertions; this context does not change a real vault or VPN.
+- **L132** — Require cli.otp\_main(\[\]) to equal 1. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L133** — Require 'example-master-password' to be absent from output.getvalue(). The test inspects data/captured calls rather than trusting printed progress alone.
 
-
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.20 Package source — tests/test_config.py
 
@@ -6049,7 +6039,7 @@ if __name__ == "__main__":
 - **L112** — Call unittest.main with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
 
 
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.21 Package source — tests/test_auth.py
 
@@ -6257,57 +6247,50 @@ class AuthTests(unittest.TestCase):
 - **L93** — Require auth.valid\_session('DSID=example') to evaluate as true; this is an assertion about the tested behavior, not a real connection request.
 
 
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.22 Package source — tests/test_keyring.py
 
-
-Offline regression checks for keyring. Each test purpose below explains its fake inputs, required behavior and protected side effects. Tests use mocks/temporary resources; their assertions and example strings are not personal account data.
+Secret Service adapter tests replace keyring.Secret directly because the from-import is now executed before individual test setup. The mock records calls without contacting a desktop keyring.
 
 **Functions and their purpose**
 
-- **KeyringTests.setUp**, L16–L24: Prepare isolated fake services or a temporary test home before each test; register cleanup so later failures cannot leave the patches active.
-- **KeyringTests.test\_load\_and\_store\_use\_the\_existing\_schema\_and\_server**, L26–L49: Replace GI/libsecret with fakes and require the same schema/server/session attributes as main, preserving cache compatibility without accessing a real keyring.
-- **KeyringTests.test\_browser\_state\_uses\_a\_separate\_key**, L51–L61: Verify browser-state lookup/storage uses kind=browser independently of the direct session-cookie identity.
-- **KeyringTests.test\_forgetting\_clears\_both\_kinds**, L63–L71: Require full remembered-state clearing to request session and browser deletion in order.
-- **KeyringTests.test\_backend\_errors\_do\_not\_expose\_secret\_values**, L73–L83: Make the fake keyring throw an exception containing a sample token; require silent ordinary streams and one safe callback warning excluding that token.
-- **KeyringTests.test\_clear\_failure\_is\_reported\_after\_trying\_both\_kinds**, L85–L92: Fail the first fake keyring clear and succeed the second; require AuthenticationError only after both deletion attempts.
+- **KeyringTests.setUp**, L14–L18: Prepare isolated fake services or a temporary test home before each test; register cleanup so later failures cannot leave the patches active.
+- **KeyringTests.test_load_and_store_use_the_existing_schema_and_server**, L20–L43: Replace GI/libsecret with fakes and require the same schema/server/session attributes as main, preserving cache compatibility without accessing a real keyring.
+- **KeyringTests.test_browser_state_uses_a_separate_key**, L45–L55: Verify browser-state lookup/storage uses kind=browser independently of the direct session-cookie identity.
+- **KeyringTests.test_forgetting_clears_both_kinds**, L57–L65: Require full remembered-state clearing to request session and browser deletion in order.
+- **KeyringTests.test_backend_errors_do_not_expose_secret_values**, L67–L77: Make the fake keyring throw an exception containing a sample token; require silent ordinary streams and one safe callback warning excluding that token.
+- **KeyringTests.test_clear_failure_is_reported_after_trying_both_kinds**, L79–L86: Fail the first fake keyring clear and succeed the second; require AuthenticationError only after both deletion attempts.
 
-
-#### 13.22.1 L1–L14 · Module documentation, imports and shared definitions
-
+#### 13.22.1 L1–L12 · Module setup and definitions
 
 ```python
 """Exercise Secret Service adapters without accessing a real desktop keyring."""
 
 import contextlib
 import io
-import sys
 import unittest
-from types import ModuleType
 from unittest.mock import Mock, patch
 
 from tifrvpn import keyring
 from tifrvpn.config import URL
 from tifrvpn.errors import AuthenticationError
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L1** — Documentation string describing this module/function or embedded program. Text inside a string is data here; embedded scripts execute only when explicitly passed to another interpreter.
-- **L3** — Import contextlib: temporary output redirection and context-manager cleanup. Importing a definition is distinct from calling an operation.
-- **L4** — Import io: in-memory text/byte streams for harmless example output. Importing a definition is distinct from calling an operation.
-- **L5** — Import sys: interpreter identity, arguments, module loading or output/exit boundaries. Importing a definition is distinct from calling an operation.
-- **L6** — Import unittest: test discovery, isolated test cases and assertions. Importing a definition is distinct from calling an operation.
-- **L7** — Import ModuleType from types for invented module objects for fake GI/Secret Service imports. Relative leading dots refer to the package hierarchy, not the shell’s current directory.
-- **L8** — Import Mock, patch from unittest.mock for temporary function/environment replacements and recording fake calls. Relative leading dots refer to the package hierarchy, not the shell’s current directory.
-- **L10** — Import keyring from tifrvpn for shared package definitions used by this module. Relative leading dots refer to the package hierarchy, not the shell’s current directory.
-- **L11** — Import URL from tifrvpn.config for shared package definitions used by this module. Relative leading dots refer to the package hierarchy, not the shell’s current directory.
-- **L12** — Import AuthenticationError from tifrvpn.errors for shared package definitions used by this module. Relative leading dots refer to the package hierarchy, not the shell’s current directory.
+- **L1** — Document this module responsibility and when its actual application operations run; this string does not execute those operations.
+- **L3** — Import contextlib at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L4** — Import io at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L5** — Import unittest at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L6** — Bind Mock, patch from unittest.mock at module scope. These names are then available to the functions below without a function-local import.
+- **L8** — Bind keyring from tifrvpn at module scope. These names are then available to the functions below without a function-local import.
+- **L9** — Bind URL from tifrvpn.config at module scope. These names are then available to the functions below without a function-local import.
+- **L10** — Bind AuthenticationError from tifrvpn.errors at module scope. These names are then available to the functions below without a function-local import.
 
-
-#### 13.22.2 L15–L15 · KeyringTests — type/state/test structure
-
+#### 13.22.2 L13–L13 · Module setup and definitions
 
 ```python
 class KeyringTests(unittest.TestCase):
@@ -6315,39 +6298,28 @@ class KeyringTests(unittest.TestCase):
 
 **Line-by-line explanation**
 
-- **L15** — Define KeyringTests as a subclass of unittest.TestCase. Instances inherit that behavior; the enclosed methods provide this test or application’s particular implementation.
+- **L13** — Define KeyringTests as a subclass of unittest.TestCase. Instances inherit that behavior; the enclosed methods provide this test or application’s particular implementation.
 
-
-#### 13.22.3 L16–L25 · KeyringTests.setUp
-
+#### 13.22.3 L14–L19 · KeyringTests.setUp
 
 ```python
     def setUp(self):
         self.secret = Mock()
-        gi = ModuleType("gi")
-        gi.require_version = Mock()
-        repository = ModuleType("gi.repository")
-        repository.Secret = self.secret
-        patcher = patch.dict(sys.modules, {"gi": gi, "gi.repository": repository})
+        patcher = patch.object(keyring, "Secret", self.secret)
         patcher.start()
         self.addCleanup(patcher.stop)
+
 ```
 
 **Line-by-line explanation**
 
-- **L16** — Define setUp(self). Prepare isolated fake services or a temporary test home before each test; register cleanup so later failures cannot leave the patches active.
-- **L17** — Store the result as self.secret. Create an invented process/service/module stand-in. It can return harmless data and record calls without contacting a real vault, network or desktop service.
-- **L18** — Store the result as gi. Create an invented process/service/module stand-in. It can return harmless data and record calls without contacting a real vault, network or desktop service.
-- **L19** — Store the result as gi.require\_version. Create an invented process/service/module stand-in. It can return harmless data and record calls without contacting a real vault, network or desktop service.
-- **L20** — Store the result as repository. Create an invented process/service/module stand-in. It can return harmless data and record calls without contacting a real vault, network or desktop service.
-- **L21** — Assign self.secret to repository.Secret. This records the shown state/input/result for the enclosing operation; it does not by itself run a separate process.
-- **L22** — Store the result as patcher. Temporarily replace sys.modules, {'gi': gi, 'gi.repository': repository} for this context so the real external operation/environment does not run. The patch is restored on block exit.
-- **L23** — Call patcher.start with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
-- **L24** — Register cleanup with unittest so the temporary resource or patch is restored even if a later assertion fails.
+- **L14** — Define setUp(self). Prepare isolated fake services or a temporary test home before each test; register cleanup so later failures cannot leave the patches active.
+- **L15** — Store the result as self.secret. Create an invented process/service/module stand-in. It can return harmless data and record calls without contacting a real vault, network or desktop service.
+- **L16** — Replace the Secret name already bound inside keyring.py with this test mock. Replacing sys.modules now would not change the earlier from-import binding.
+- **L17** — Call patcher.start with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
+- **L18** — Register cleanup with unittest so the temporary resource or patch is restored even if a later assertion fails.
 
-
-#### 13.22.4 L26–L50 · KeyringTests.test_load_and_store_use_the_existing_schema_and_server
-
+#### 13.22.4 L20–L44 · KeyringTests.test_load_and_store_use_the_existing_schema_and_server
 
 ```python
     def test_load_and_store_use_the_existing_schema_and_server(self):
@@ -6374,22 +6346,21 @@ class KeyringTests(unittest.TestCase):
             "DSID=example",
             None,
         )
+
 ```
 
 **Line-by-line explanation**
 
-- **L26** — Define test\_load\_and\_store\_use\_the\_existing\_schema\_and\_server(self). Replace GI/libsecret with fakes and require the same schema/server/session attributes as main, preserving cache compatibility without accessing a real keyring.
-- **L27** — Assign 'DSID=example' to self.secret.password\_lookup\_sync.return\_value. This records the shown state/input/result for the enclosing operation; it does not by itself run a separate process.
-- **L28** — Require keyring.load\_session() to equal 'DSID=example'. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
-- **L29** — Assign self.secret.Schema.new.return\_value to schema. This records the shown state/input/result for the enclosing operation; it does not by itself run a separate process.
-- **L30–L37** — Check the recorded call to self.secret.Schema.new used the specified positional/keyword arguments.
-- **L38–L40** — Check the recorded call to self.secret.password\_lookup\_sync used the specified positional/keyword arguments exactly once.
-- **L41** — Call keyring.save\_session with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
-- **L42–L49** — Check the recorded call to self.secret.password\_store\_sync used the specified positional/keyword arguments exactly once.
+- **L20** — Define test\_load\_and\_store\_use\_the\_existing\_schema\_and\_server(self). Replace GI/libsecret with fakes and require the same schema/server/session attributes as main, preserving cache compatibility without accessing a real keyring.
+- **L21** — Assign 'DSID=example' to self.secret.password\_lookup\_sync.return\_value. This records the shown state/input/result for the enclosing operation; it does not by itself run a separate process.
+- **L22** — Require keyring.load\_session() to equal 'DSID=example'. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L23** — Assign self.secret.Schema.new.return\_value to schema. This records the shown state/input/result for the enclosing operation; it does not by itself run a separate process.
+- **L24–L31** — Check the recorded call to self.secret.Schema.new used the specified positional/keyword arguments.
+- **L32–L34** — Check the recorded call to self.secret.password\_lookup\_sync used the specified positional/keyword arguments exactly once.
+- **L35** — Call keyring.save\_session with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
+- **L36–L43** — Check the recorded call to self.secret.password\_store\_sync used the specified positional/keyword arguments exactly once.
 
-
-#### 13.22.5 L51–L62 · KeyringTests.test_browser_state_uses_a_separate_key
-
+#### 13.22.5 L45–L56 · KeyringTests.test_browser_state_uses_a_separate_key
 
 ```python
     def test_browser_state_uses_a_separate_key(self):
@@ -6403,19 +6374,18 @@ class KeyringTests(unittest.TestCase):
             self.secret.password_store_sync.call_args.args[1],
             {"server": URL, "kind": "browser"},
         )
+
 ```
 
 **Line-by-line explanation**
 
-- **L51** — Define test\_browser\_state\_uses\_a\_separate\_key(self). Verify browser-state lookup/storage uses kind=browser independently of the direct session-cookie identity.
-- **L52** — Call keyring.load\_browser\_state with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
-- **L53–L56** — Require self.secret.password\_lookup\_sync.call\_args.args\[1\] to equal {'server': URL, 'kind': 'browser'}. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
-- **L57** — Call keyring.save\_browser\_state with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
-- **L58–L61** — Require self.secret.password\_store\_sync.call\_args.args\[1\] to equal {'server': URL, 'kind': 'browser'}. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L45** — Define test\_browser\_state\_uses\_a\_separate\_key(self). Verify browser-state lookup/storage uses kind=browser independently of the direct session-cookie identity.
+- **L46** — Call keyring.load\_browser\_state with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
+- **L47–L50** — Require self.secret.password\_lookup\_sync.call\_args.args\[1\] to equal {'server': URL, 'kind': 'browser'}. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L51** — Call keyring.save\_browser\_state with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
+- **L52–L55** — Require self.secret.password\_store\_sync.call\_args.args\[1\] to equal {'server': URL, 'kind': 'browser'}. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
 
-
-#### 13.22.6 L63–L72 · KeyringTests.test_forgetting_clears_both_kinds
-
+#### 13.22.6 L57–L66 · KeyringTests.test_forgetting_clears_both_kinds
 
 ```python
     def test_forgetting_clears_both_kinds(self):
@@ -6427,17 +6397,16 @@ class KeyringTests(unittest.TestCase):
             ],
             ["session", "browser"],
         )
+
 ```
 
 **Line-by-line explanation**
 
-- **L63** — Define test\_forgetting\_clears\_both\_kinds(self). Require full remembered-state clearing to request session and browser deletion in order.
-- **L64** — Call keyring.clear\_saved\_login with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
-- **L65–L71** — Require \[call.args\[1\]\['kind'\] for call in self.secret.password\_clear\_sync.call\_args\_list\] to equal \['session', 'browser'\]. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L57** — Define test\_forgetting\_clears\_both\_kinds(self). Require full remembered-state clearing to request session and browser deletion in order.
+- **L58** — Call keyring.clear\_saved\_login with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
+- **L59–L65** — Require \[call.args\[1\]\['kind'\] for call in self.secret.password\_clear\_sync.call\_args\_list\] to equal \['session', 'browser'\]. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
 
-
-#### 13.22.7 L73–L84 · KeyringTests.test_backend_errors_do_not_expose_secret_values
-
+#### 13.22.7 L67–L78 · KeyringTests.test_backend_errors_do_not_expose_secret_values
 
 ```python
     def test_backend_errors_do_not_expose_secret_values(self):
@@ -6451,23 +6420,22 @@ class KeyringTests(unittest.TestCase):
         self.assertEqual(output.getvalue(), "")
         self.assertEqual(len(events), 1)
         self.assertNotIn("example-sensitive", events[0])
+
 ```
 
 **Line-by-line explanation**
 
-- **L73** — Define test\_backend\_errors\_do\_not\_expose\_secret\_values(self). Make the fake keyring throw an exception containing a sample token; require silent ordinary streams and one safe callback warning excluding that token.
-- **L74–L76** — Store the result as self.secret.password\_lookup\_sync.side\_effect. Call RuntimeError with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
-- **L77** — Prepare events as the displayed structured example data, state or ordered fake-outcome collection. It is a Python value, not a shell command string; the surrounding test/function explains why these entries are selected.
-- **L78** — Store the result as output. Create a file-like in-memory text buffer so the test can inspect output without printing example credentials to the real terminal.
-- **L79** — Temporarily route Python output into the selected in-memory buffer for assertions; this context does not change a real vault or VPN. Temporarily route Python output into the selected in-memory buffer for assertions; this context does not change a real vault or VPN.
-- **L80** — Require keyring.load\_session(on\_progress=events.append) to be None, the explicit no-value/failure-or-absent result checked by this test.
-- **L81** — Require output.getvalue() to equal ''. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
-- **L82** — Require len(events) to equal 1. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
-- **L83** — Require 'example-sensitive' to be absent from events\[0\]. The test inspects data/captured calls rather than trusting printed progress alone.
+- **L67** — Define test\_backend\_errors\_do\_not\_expose\_secret\_values(self). Make the fake keyring throw an exception containing a sample token; require silent ordinary streams and one safe callback warning excluding that token.
+- **L68–L70** — Store the result as self.secret.password\_lookup\_sync.side\_effect. Call RuntimeError with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
+- **L71** — Prepare events as the displayed structured example data, state or ordered fake-outcome collection. It is a Python value, not a shell command string; the surrounding test/function explains why these entries are selected.
+- **L72** — Store the result as output. Create a file-like in-memory text buffer so the test can inspect output without printing example credentials to the real terminal.
+- **L73** — Temporarily route Python output into the selected in-memory buffer for assertions; this context does not change a real vault or VPN. Temporarily route Python output into the selected in-memory buffer for assertions; this context does not change a real vault or VPN.
+- **L74** — Require keyring.load\_session(on\_progress=events.append) to be None, the explicit no-value/failure-or-absent result checked by this test.
+- **L75** — Require output.getvalue() to equal ''. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L76** — Require len(events) to equal 1. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L77** — Require 'example-sensitive' to be absent from events\[0\]. The test inspects data/captured calls rather than trusting printed progress alone.
 
-
-#### 13.22.8 L85–L92 · KeyringTests.test_clear_failure_is_reported_after_trying_both_kinds
-
+#### 13.22.8 L79–L86 · KeyringTests.test_clear_failure_is_reported_after_trying_both_kinds
 
 ```python
     def test_clear_failure_is_reported_after_trying_both_kinds(self):
@@ -6482,34 +6450,30 @@ class KeyringTests(unittest.TestCase):
 
 **Line-by-line explanation**
 
-- **L85** — Define test\_clear\_failure\_is\_reported\_after\_trying\_both\_kinds(self). Fail the first fake keyring clear and succeed the second; require AuthenticationError only after both deletion attempts.
-- **L86–L89** — Prepare self.secret.password\_clear\_sync.side\_effect as the displayed structured example data, state or ordered fake-outcome collection. It is a Python value, not a shell command string; the surrounding test/function explains why these entries are selected.
-- **L90** — Expect the enclosed call to raise AuthenticationError. A missing/wrong exception makes the test fail.
-- **L91** — Call keyring.clear\_saved\_login with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
-- **L92** — Require self.secret.password\_clear\_sync.call\_count to equal 2. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L79** — Define test\_clear\_failure\_is\_reported\_after\_trying\_both\_kinds(self). Fail the first fake keyring clear and succeed the second; require AuthenticationError only after both deletion attempts.
+- **L80–L83** — Prepare self.secret.password\_clear\_sync.side\_effect as the displayed structured example data, state or ordered fake-outcome collection. It is a Python value, not a shell command string; the surrounding test/function explains why these entries are selected.
+- **L84** — Expect the enclosed call to raise AuthenticationError. A missing/wrong exception makes the test fail.
+- **L85** — Call keyring.clear\_saved\_login with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
+- **L86** — Require self.secret.password\_clear\_sync.call\_count to equal 2. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
 
-
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.23 Package source — tests/test_networkmanager.py
-
 
 Offline regression checks for networkmanager. Each test purpose below explains its fake inputs, required behavior and protected side effects. Tests use mocks/temporary resources; their assertions and example strings are not personal account data.
 
 **Functions and their purpose**
 
-- **NetworkManagerTests.test\_duplicate\_profile\_is\_rejected**, L13–L22: Return two UUID lines from fake nmcli and require an ambiguous-profile error rather than picking one arbitrarily.
-- **NetworkManagerTests.test\_existing\_incompatible\_profile\_is\_not\_modified**, L24–L32: Return another plugin for an existing named profile; require a clear error after the service query, before any modification call.
-- **NetworkManagerTests.test\_missing\_profile\_is\_created\_with\_original\_flags**, L34–L50: Fake profile absence then creation; verify user permissions, autoconnect configuration, certificate checks and not-saved cookie flags match the original profile intent.
-- **NetworkManagerTests.test\_ambiguous\_missing\_lookup\_cannot\_create\_duplicate**, L52–L60: Simulate lookup failure while the name still exists in the complete listing; require an ambiguity error and no profile-creation operation.
-- **NetworkManagerTests.test\_profile\_gateway\_and\_protocol\_are\_validated**, L62–L85: Test the intended gateway/nc combination and mismatched gateway/protocol choices; only the intended profile settings may proceed.
-- **NetworkManagerTests.test\_command\_failure\_preserves\_exit\_status**, L87–L94: Make fake nmcli fail with code 10 and require NetworkManagerError.returncode to retain 10.
-- **NetworkManagerTests.test\_session\_secrets\_use\_only\_an\_inherited\_memory\_file**, L96–L134: Fake TLS/certificate operations, intercept actual anonymous-fd payload, verify cookie/pin/resolve records stay out of argv, force activation failure and require fd cleanup afterward.
-- **NetworkManagerTests.test\_session\_secrets\_use\_only\_an\_inherited\_memory\_file.activate**, L113–L122: Intercept the fake activation call, inspect the anonymous descriptor payload and raise the intended fake failure to exercise cleanup.
+- **NetworkManagerTests.test_duplicate_profile_is_rejected**, L15–L24: Return two UUID lines from fake nmcli and require an ambiguous-profile error rather than picking one arbitrarily.
+- **NetworkManagerTests.test_existing_incompatible_profile_is_not_modified**, L26–L34: Return another plugin for an existing named profile; require a clear error after the service query, before any modification call.
+- **NetworkManagerTests.test_missing_profile_is_created_with_original_flags**, L36–L52: Fake profile absence then creation; verify user permissions, autoconnect configuration, certificate checks and not-saved cookie flags match the original profile intent.
+- **NetworkManagerTests.test_ambiguous_missing_lookup_cannot_create_duplicate**, L54–L62: Simulate lookup failure while the name still exists in the complete listing; require an ambiguity error and no profile-creation operation.
+- **NetworkManagerTests.test_profile_gateway_and_protocol_are_validated**, L64–L87: Test the intended gateway/nc combination and mismatched gateway/protocol choices; only the intended profile settings may proceed.
+- **NetworkManagerTests.test_command_failure_preserves_exit_status**, L89–L96: Make fake nmcli fail with code 10 and require NetworkManagerError.returncode to retain 10.
+- **NetworkManagerTests.test_session_secrets_use_only_an_inherited_memory_file**, L98–L134: Fake TLS/certificate operations, intercept actual anonymous-fd payload, verify cookie/pin/resolve records stay out of argv, force activation failure and require fd cleanup afterward.
+- **NetworkManagerTests.test_session_secrets_use_only_an_inherited_memory_file.activate**, L113–L122: Intercept the fake activation call, inspect the anonymous descriptor payload and raise the intended fake failure to exercise cleanup.
 
-
-#### 13.23.1 L1–L11 · Module documentation, imports and shared definitions
-
+#### 13.23.1 L1–L13 · Module setup and definitions
 
 ```python
 """Backend checks with mocked commands and TLS, using no live services."""
@@ -6519,23 +6483,26 @@ import subprocess
 import unittest
 from unittest.mock import Mock, patch
 
+from cryptography import x509
+
 from tifrvpn import networkmanager as nm
 from tifrvpn.errors import NetworkManagerError, ProfileNotFound
+
+
 ```
 
 **Line-by-line explanation**
 
-- **L1** — Documentation string describing this module/function or embedded program. Text inside a string is data here; embedded scripts execute only when explicitly passed to another interpreter.
-- **L3** — Import os: environment variables and low-level operating-system/file-descriptor operations. Importing a definition is distinct from calling an operation.
-- **L4** — Import subprocess: direct child-program execution, captured output and explicit failure results. Importing a definition is distinct from calling an operation.
-- **L5** — Import unittest: test discovery, isolated test cases and assertions. Importing a definition is distinct from calling an operation.
-- **L6** — Import Mock, patch from unittest.mock for temporary function/environment replacements and recording fake calls. Relative leading dots refer to the package hierarchy, not the shell’s current directory.
-- **L8** — Import networkmanager as nm from tifrvpn for shared package definitions used by this module. Relative leading dots refer to the package hierarchy, not the shell’s current directory.
-- **L9** — Import NetworkManagerError, ProfileNotFound from tifrvpn.errors for shared package definitions used by this module. Relative leading dots refer to the package hierarchy, not the shell’s current directory.
+- **L1** — Document this module responsibility and when its actual application operations run; this string does not execute those operations.
+- **L3** — Import os at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L4** — Import subprocess at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L5** — Import unittest at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L6** — Bind Mock, patch from unittest.mock at module scope. These names are then available to the functions below without a function-local import.
+- **L8** — Bind x509 from cryptography at module scope. These names are then available to the functions below without a function-local import.
+- **L10** — Bind networkmanager as nm from tifrvpn at module scope. These names are then available to the functions below without a function-local import.
+- **L11** — Bind NetworkManagerError, ProfileNotFound from tifrvpn.errors at module scope. These names are then available to the functions below without a function-local import.
 
-
-#### 13.23.2 L12–L12 · NetworkManagerTests — type/state/test structure
-
+#### 13.23.2 L14–L14 · Module setup and definitions
 
 ```python
 class NetworkManagerTests(unittest.TestCase):
@@ -6543,11 +6510,9 @@ class NetworkManagerTests(unittest.TestCase):
 
 **Line-by-line explanation**
 
-- **L12** — Define NetworkManagerTests as a subclass of unittest.TestCase. Instances inherit that behavior; the enclosed methods provide this test or application’s particular implementation.
+- **L14** — Define NetworkManagerTests as a subclass of unittest.TestCase. Instances inherit that behavior; the enclosed methods provide this test or application’s particular implementation.
 
-
-#### 13.23.3 L13–L23 · NetworkManagerTests.test_duplicate_profile_is_rejected
-
+#### 13.23.3 L15–L25 · NetworkManagerTests.test_duplicate_profile_is_rejected
 
 ```python
     def test_duplicate_profile_is_rejected(self):
@@ -6560,17 +6525,16 @@ class NetworkManagerTests(unittest.TestCase):
             self.assertRaisesRegex(NetworkManagerError, "expected one"),
         ):
             nm.profile_uuid()
+
 ```
 
 **Line-by-line explanation**
 
-- **L13** — Define test\_duplicate\_profile\_is\_rejected(self). Return two UUID lines from fake nmcli and require an ambiguous-profile error rather than picking one arbitrarily.
-- **L14–L21** — Temporarily replace nm.subprocess, 'run' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit. Expect the enclosed call to raise NetworkManagerError with a message matching 'expected one'. A missing/wrong exception makes the test fail.
-- **L22** — Call nm.profile\_uuid with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
+- **L15** — Define test\_duplicate\_profile\_is\_rejected(self). Return two UUID lines from fake nmcli and require an ambiguous-profile error rather than picking one arbitrarily.
+- **L16–L23** — Temporarily replace nm.subprocess, 'run' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit. Expect the enclosed call to raise NetworkManagerError with a message matching 'expected one'. A missing/wrong exception makes the test fail.
+- **L24** — Call nm.profile\_uuid with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
 
-
-#### 13.23.4 L24–L33 · NetworkManagerTests.test_existing_incompatible_profile_is_not_modified
-
+#### 13.23.4 L26–L35 · NetworkManagerTests.test_existing_incompatible_profile_is_not_modified
 
 ```python
     def test_existing_incompatible_profile_is_not_modified(self):
@@ -6582,18 +6546,17 @@ class NetworkManagerTests(unittest.TestCase):
         ):
             nm.setup_profile()
         self.assertEqual(run.call_count, 1)
+
 ```
 
 **Line-by-line explanation**
 
-- **L24** — Define test\_existing\_incompatible\_profile\_is\_not\_modified(self). Return another plugin for an existing named profile; require a clear error after the service query, before any modification call.
-- **L25–L30** — Temporarily replace nm, 'require\_available' for this context so the real external operation/environment does not run. The patch is restored on block exit. Temporarily replace nm, 'profile\_uuid' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit. Temporarily replace nm, '\_run' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit. Expect the enclosed call to raise NetworkManagerError with a message matching 'different VPN plugin'. A missing/wrong exception makes the test fail.
-- **L31** — Call nm.setup\_profile with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
-- **L32** — Require run.call\_count to equal 1. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L26** — Define test\_existing\_incompatible\_profile\_is\_not\_modified(self). Return another plugin for an existing named profile; require a clear error after the service query, before any modification call.
+- **L27–L32** — Temporarily replace nm, 'require\_available' for this context so the real external operation/environment does not run. The patch is restored on block exit. Temporarily replace nm, 'profile\_uuid' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit. Temporarily replace nm, '\_run' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit. Expect the enclosed call to raise NetworkManagerError with a message matching 'different VPN plugin'. A missing/wrong exception makes the test fail.
+- **L33** — Call nm.setup\_profile with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
+- **L34** — Require run.call\_count to equal 1. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
 
-
-#### 13.23.5 L34–L51 · NetworkManagerTests.test_missing_profile_is_created_with_original_flags
-
+#### 13.23.5 L36–L53 · NetworkManagerTests.test_missing_profile_is_created_with_original_flags
 
 ```python
     def test_missing_profile_is_created_with_original_flags(self):
@@ -6613,23 +6576,22 @@ class NetworkManagerTests(unittest.TestCase):
         self.assertIn("prevent_invalid_cert=yes", args[-1])
         self.assertIn("cookie-flags=2", args[-1])
         self.assertIn("connection.autoconnect", args)
+
 ```
 
 **Line-by-line explanation**
 
-- **L34** — Define test\_missing\_profile\_is\_created\_with\_original\_flags(self). Fake profile absence then creation; verify user permissions, autoconnect configuration, certificate checks and not-saved cookie flags match the original profile intent.
-- **L35–L43** — Temporarily replace nm, 'require\_available' for this context so the real external operation/environment does not run. The patch is restored on block exit. Temporarily replace nm, 'profile\_uuid' for this context so the real external operation/environment does not run. Simulate the supplied exception, callback or sequence of outcomes. The patch is restored on block exit. Temporarily replace nm, '\_run' for this context so the real external operation/environment does not run. Simulate the supplied exception, callback or sequence of outcomes. The patch is restored on block exit.
-- **L44** — Require nm.setup\_profile() to equal 'new-profile'. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
-- **L45** — Assign run.call\_args.args\[0\] to args. This records the shown state/input/result for the enclosing operation; it does not by itself run a separate process.
-- **L46** — Require 'connection.permissions' to be present in args. The test inspects data/captured calls rather than trusting printed progress alone.
-- **L47** — Require args\[-2:\] to equal \['vpn.data', nm.VPN\_DATA\]. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
-- **L48** — Require 'prevent\_invalid\_cert=yes' to be present in args\[-1\]. The test inspects data/captured calls rather than trusting printed progress alone.
-- **L49** — Require 'cookie-flags=2' to be present in args\[-1\]. The test inspects data/captured calls rather than trusting printed progress alone.
-- **L50** — Require 'connection.autoconnect' to be present in args. The test inspects data/captured calls rather than trusting printed progress alone.
+- **L36** — Define test\_missing\_profile\_is\_created\_with\_original\_flags(self). Fake profile absence then creation; verify user permissions, autoconnect configuration, certificate checks and not-saved cookie flags match the original profile intent.
+- **L37–L45** — Temporarily replace nm, 'require\_available' for this context so the real external operation/environment does not run. The patch is restored on block exit. Temporarily replace nm, 'profile\_uuid' for this context so the real external operation/environment does not run. Simulate the supplied exception, callback or sequence of outcomes. The patch is restored on block exit. Temporarily replace nm, '\_run' for this context so the real external operation/environment does not run. Simulate the supplied exception, callback or sequence of outcomes. The patch is restored on block exit.
+- **L46** — Require nm.setup\_profile() to equal 'new-profile'. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L47** — Assign run.call\_args.args\[0\] to args. This records the shown state/input/result for the enclosing operation; it does not by itself run a separate process.
+- **L48** — Require 'connection.permissions' to be present in args. The test inspects data/captured calls rather than trusting printed progress alone.
+- **L49** — Require args\[-2:\] to equal \['vpn.data', nm.VPN\_DATA\]. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L50** — Require 'prevent\_invalid\_cert=yes' to be present in args\[-1\]. The test inspects data/captured calls rather than trusting printed progress alone.
+- **L51** — Require 'cookie-flags=2' to be present in args\[-1\]. The test inspects data/captured calls rather than trusting printed progress alone.
+- **L52** — Require 'connection.autoconnect' to be present in args. The test inspects data/captured calls rather than trusting printed progress alone.
 
-
-#### 13.23.6 L52–L61 · NetworkManagerTests.test_ambiguous_missing_lookup_cannot_create_duplicate
-
+#### 13.23.6 L54–L63 · NetworkManagerTests.test_ambiguous_missing_lookup_cannot_create_duplicate
 
 ```python
     def test_ambiguous_missing_lookup_cannot_create_duplicate(self):
@@ -6641,18 +6603,17 @@ class NetworkManagerTests(unittest.TestCase):
         ):
             nm.setup_profile()
         self.assertEqual(run.call_count, 1)
+
 ```
 
 **Line-by-line explanation**
 
-- **L52** — Define test\_ambiguous\_missing\_lookup\_cannot\_create\_duplicate(self). Simulate lookup failure while the name still exists in the complete listing; require an ambiguity error and no profile-creation operation.
-- **L53–L58** — Temporarily replace nm, 'require\_available' for this context so the real external operation/environment does not run. The patch is restored on block exit. Temporarily replace nm, 'profile\_uuid' for this context so the real external operation/environment does not run. Simulate the supplied exception, callback or sequence of outcomes. The patch is restored on block exit. Temporarily replace nm, '\_run' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit. Expect the enclosed call to raise NetworkManagerError with a message matching 'ambiguous'. A missing/wrong exception makes the test fail.
-- **L59** — Call nm.setup\_profile with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
-- **L60** — Require run.call\_count to equal 1. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L54** — Define test\_ambiguous\_missing\_lookup\_cannot\_create\_duplicate(self). Simulate lookup failure while the name still exists in the complete listing; require an ambiguity error and no profile-creation operation.
+- **L55–L60** — Temporarily replace nm, 'require\_available' for this context so the real external operation/environment does not run. The patch is restored on block exit. Temporarily replace nm, 'profile\_uuid' for this context so the real external operation/environment does not run. Simulate the supplied exception, callback or sequence of outcomes. The patch is restored on block exit. Temporarily replace nm, '\_run' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit. Expect the enclosed call to raise NetworkManagerError with a message matching 'ambiguous'. A missing/wrong exception makes the test fail.
+- **L61** — Call nm.setup\_profile with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
+- **L62** — Require run.call\_count to equal 1. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
 
-
-#### 13.23.7 L62–L86 · NetworkManagerTests.test_profile_gateway_and_protocol_are_validated
-
+#### 13.23.7 L64–L88 · NetworkManagerTests.test_profile_gateway_and_protocol_are_validated
 
 ```python
     def test_profile_gateway_and_protocol_are_validated(self):
@@ -6679,22 +6640,21 @@ class NetworkManagerTests(unittest.TestCase):
                         NetworkManagerError, "Profile settings differ"
                     ):
                         nm.validate_profile("profile")
+
 ```
 
 **Line-by-line explanation**
 
-- **L62** — Define test\_profile\_gateway\_and\_protocol\_are\_validated(self). Test the intended gateway/nc combination and mismatched gateway/protocol choices; only the intended profile settings may proceed.
-- **L63–L67** — For each (gateway, protocol, valid) in \[(nm.URL, 'nc', True), ('https://example.com', 'nc', False), (nm.URL, 'anyconnect', False)\], run the indented body. In tests, this checks every listed case rather than a single happy path.
-- **L68–L78** — Label this loop iteration as its own subtest so failures identify the particular argument/state/input case while other cases still run. Temporarily replace nm, '\_run' for this context so the real external operation/environment does not run. Simulate the supplied exception, callback or sequence of outcomes. The patch is restored on block exit.
-- **L79** — Only run this branch when valid is true. The following indented statements implement that condition’s case; later else/elif handles alternatives.
-- **L80** — Call nm.validate\_profile with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
-- **L81** — Run the alternative branch after the preceding condition did not select its main branch.
-- **L82–L84** — Expect the enclosed call to raise NetworkManagerError with a message matching 'Profile settings differ'. A missing/wrong exception makes the test fail.
-- **L85** — Call nm.validate\_profile with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
+- **L64** — Define test\_profile\_gateway\_and\_protocol\_are\_validated(self). Test the intended gateway/nc combination and mismatched gateway/protocol choices; only the intended profile settings may proceed.
+- **L65–L69** — For each (gateway, protocol, valid) in \[(nm.URL, 'nc', True), ('https://example.com', 'nc', False), (nm.URL, 'anyconnect', False)\], run the indented body. In tests, this checks every listed case rather than a single happy path.
+- **L70–L80** — Label this loop iteration as its own subtest so failures identify the particular argument/state/input case while other cases still run. Temporarily replace nm, '\_run' for this context so the real external operation/environment does not run. Simulate the supplied exception, callback or sequence of outcomes. The patch is restored on block exit.
+- **L81** — Only run this branch when valid is true. The following indented statements implement that condition’s case; later else/elif handles alternatives.
+- **L82** — Call nm.validate\_profile with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
+- **L83** — Run the alternative branch after the preceding condition did not select its main branch.
+- **L84–L86** — Expect the enclosed call to raise NetworkManagerError with a message matching 'Profile settings differ'. A missing/wrong exception makes the test fail.
+- **L87** — Call nm.validate\_profile with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
 
-
-#### 13.23.8 L87–L95 · NetworkManagerTests.test_command_failure_preserves_exit_status
-
+#### 13.23.8 L89–L97 · NetworkManagerTests.test_command_failure_preserves_exit_status
 
 ```python
     def test_command_failure_preserves_exit_status(self):
@@ -6705,24 +6665,21 @@ class NetworkManagerTests(unittest.TestCase):
         ):
             nm.deactivate("profile")
         self.assertEqual(raised.exception.returncode, 10)
+
 ```
 
 **Line-by-line explanation**
 
-- **L87** — Define test\_command\_failure\_preserves\_exit\_status(self). Make fake nmcli fail with code 10 and require NetworkManagerError.returncode to retain 10.
-- **L88** — Store the result as result. Construct an invented child-program result containing argv, exit status and example output; constructing this record does not execute the command.
-- **L89–L92** — Temporarily replace nm.subprocess, 'run' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit. Expect the enclosed call to raise NetworkManagerError. A missing/wrong exception makes the test fail.
-- **L93** — Call nm.deactivate with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
-- **L94** — Require raised.exception.returncode to equal 10. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
+- **L89** — Define test\_command\_failure\_preserves\_exit\_status(self). Make fake nmcli fail with code 10 and require NetworkManagerError.returncode to retain 10.
+- **L90** — Store the result as result. Construct an invented child-program result containing argv, exit status and example output; constructing this record does not execute the command.
+- **L91–L94** — Temporarily replace nm.subprocess, 'run' for this context so the real external operation/environment does not run. Return the specified fake result. The patch is restored on block exit. Expect the enclosed call to raise NetworkManagerError. A missing/wrong exception makes the test fail.
+- **L95** — Call nm.deactivate with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
+- **L96** — Require raised.exception.returncode to equal 10. If not, unittest marks this behavior as failing; an optional third argument supplies diagnostic context.
 
-
-#### 13.23.9 L96–L112 · NetworkManagerTests.test_session_secrets_use_only_an_inherited_memory_file
-
+#### 13.23.9 L98–L112 · NetworkManagerTests.test_session_secrets_use_only_an_inherited_memory_file
 
 ```python
     def test_session_secrets_use_only_an_inherited_memory_file(self):
-        from cryptography import x509
-
         connection = Mock()
         connection.__enter__ = Mock(return_value=connection)
         connection.__exit__ = Mock(return_value=False)
@@ -6736,12 +6693,12 @@ class NetworkManagerTests(unittest.TestCase):
         cert = Mock()
         cert.public_key.return_value.public_bytes.return_value = b"example-public-key"
         captured = {}
+
 ```
 
 **Line-by-line explanation**
 
-- **L96** — Define test\_session\_secrets\_use\_only\_an\_inherited\_memory\_file(self). Fake TLS/certificate operations, intercept actual anonymous-fd payload, verify cookie/pin/resolve records stay out of argv, force activation failure and require fd cleanup afterward.
-- **L97** — Import x509 from cryptography for shared package definitions used by this module. Relative leading dots refer to the package hierarchy, not the shell’s current directory.
+- **L98** — Define test\_session\_secrets\_use\_only\_an\_inherited\_memory\_file(self). Fake TLS/certificate operations, intercept actual anonymous-fd payload, verify cookie/pin/resolve records stay out of argv, force activation failure and require fd cleanup afterward.
 - **L99** — Store the result as connection. Create an invented process/service/module stand-in. It can return harmless data and record calls without contacting a real vault, network or desktop service.
 - **L100** — Store the result as connection.\_\_enter\_\_. Create an invented process/service/module stand-in. It can return harmless data and record calls without contacting a real vault, network or desktop service.
 - **L101** — Store the result as connection.\_\_exit\_\_. Create an invented process/service/module stand-in. It can return harmless data and record calls without contacting a real vault, network or desktop service.
@@ -6756,9 +6713,7 @@ class NetworkManagerTests(unittest.TestCase):
 - **L110** — Assign b'example-public-key' to cert.public\_key.return\_value.public\_bytes.return\_value. This records the shown state/input/result for the enclosing operation; it does not by itself run a separate process.
 - **L111** — Prepare captured as the displayed structured example data, state or ordered fake-outcome collection. It is a Python value, not a shell command string; the surrounding test/function explains why these entries are selected.
 
-
 #### 13.23.10 L113–L134 · NetworkManagerTests.test_session_secrets_use_only_an_inherited_memory_file.activate
-
 
 ```python
         def activate(arguments, **kwargs):
@@ -6803,8 +6758,7 @@ class NetworkManagerTests(unittest.TestCase):
 - **L133** — Call os.fstat with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
 - **L134** — Check the recorded call to context.wrap\_socket used the specified positional/keyword arguments exactly once.
 
-
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.24 Package source — tests/test_quiet.py
 
@@ -7119,7 +7073,7 @@ if __name__ == "__main__":
 - **L130** — Call unittest.main with the shown inputs and named options. In this test context, surrounding patches determine which dependencies are harmless recorded fakes.
 
 
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.25 Package source — tests/test_packaging.py
 
@@ -7317,18 +7271,15 @@ class PackagingTests(unittest.TestCase):
 - **L72–L74** — Require successful silent library import in that installed environment.
 
 
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.26 Package source — pyproject.toml
 
-
-The package distribution is still named tifrvpn-tui, but the Python import name is tifrvpn and the three installed commands are tifrvpn, tifr-otp and tifr-import-totp. This metadata joins those different names explicitly. It describes a real importable library now, replacing the main branch’s greeting-package scaffold. It does not bundle/install Linux services or GI system libraries.
+The project declares Python>=3.13, its installed command entry points, build backend and Python dependencies. PyGObject is now a declared dependency, providing import gi inside the ordinary uv environment. This metadata cannot install operating-system libraries or services.
 
 **Relation to main:** [[TIFR Vpn TUI#7.9 pyproject.toml|pyproject.toml]] — Replace the greeting entry point with three real commands, remove redundant argparse, and select the actual tifrvpn module.
 
-
-#### 13.26.1 L1–L27 · Complete file
-
+#### 13.26.1 L1–L28 · File contents
 
 ```toml
 [project]
@@ -7343,6 +7294,7 @@ requires-python = ">=3.13"
 dependencies = [
     "cryptography>=50.0.2",
     "numpy>=2.5.4",
+    "pygobject>=3.58.1",
     "pyside6>=6.12.0",
     "zxing-cpp>=3.1.1",
 ]
@@ -7372,21 +7324,21 @@ module-name = "tifrvpn"
 - **L10** — Begin the direct Python dependency list. argparse was removed because it is already in the supported Python standard library.
 - **L11** — Require cryptography for certificate/public-key parsing during tunnel activation.
 - **L12** — Require NumPy for grayscale QR pixel arrays.
-- **L13** — Require PySide6 for local password setup and scanner/camera UI.
-- **L14** — Require zxing-cpp for QR decoding.
-- **L15** — Close dependency declarations. These GUI/QR dependencies remain declared for package installation even though their imports are lazy; no optional extras are defined here.
-- **L17** — Open the standard console-script entry-point table. Installers use it to generate executable wrappers in the selected Python environment.
-- **L18** — Generate tifrvpn to call tifrvpn.cli.main; importing a module and calling the function replaces the old root Zsh launcher path.
-- **L19** — Generate tifr-otp to call cli.otp\_main, the terminal wrapper around shared credential functions.
-- **L20** — Generate tifr-import-totp to call cli.import\_totp\_main, which parses options before importing the scanner.
-- **L22** — Declare the Python build-system table; these are build dependencies, not OS VPN services.
-- **L23** — Use a compatible uv\_build release range for creating wheels/source distributions and editable metadata.
-- **L24** — Select uv\_build as the package build backend.
-- **L26** — Open uv\_build-specific package-layout configuration.
-- **L27** — Set module-name=tifrvpn so the backend packages src/tifrvpn, despite the distribution being named tifrvpn-tui. This removes the old mismatch with the unused src/tifrvpn\_tui greeting scaffold.
+- **L13** — Declare PyGObject as a Python dependency. The installed distribution supplies import gi; uv can build it for this environment Python instead of reusing Fedora Python bindings.
+- **L14** — Require PySide6 for local password setup and scanner/camera UI.
+- **L15** — Require zxing-cpp for QR decoding.
+- **L16** — Close the list of Python dependency requirements.
+- **L18** — Open the standard console-script entry-point table. Installers use it to generate executable wrappers in the selected Python environment.
+- **L19** — Generate tifrvpn to call tifrvpn.cli.main; importing a module and calling the function replaces the old root Zsh launcher path.
+- **L20** — Generate tifr-otp to call cli.otp\_main, the terminal wrapper around shared credential functions.
+- **L21** — Generate tifr-import-totp to call cli.import\_totp\_main, which parses options before importing the scanner.
+- **L23** — Declare the Python build-system table; these are build dependencies, not OS VPN services.
+- **L24** — Use a compatible uv\_build release range for creating wheels/source distributions and editable metadata.
+- **L25** — Select uv\_build as the package build backend.
+- **L27** — Open uv\_build-specific package-layout configuration.
+- **L28** — Set module-name=tifrvpn so the backend packages src/tifrvpn, despite the distribution being named tifrvpn-tui. This removes the old mismatch with the unused src/tifrvpn\_tui greeting scaffold.
 
-
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.27 Package source — config.example.json
 
@@ -7414,18 +7366,15 @@ The previously missing example config is now present on the package branch. It c
 - **L5** — Close the object. Each setting can be overridden by its corresponding TIFR\_KEEPASS environment variable when using load\_config.
 
 
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.28 Package source — README.md
 
-
-The branch’s human-facing instructions now describe installing an actual Python distribution and using its library. The shared account/vault/SSO workflows remain familiar, while copying root scripts with install.sh is no longer the current workflow. The notes distinguish what the README promises from what the implementation/test snapshot actually verifies, including buffered worker diagnostics and live-login testing limits.
+The current README documents the isolated Python 3.13 uv route, native GI build/runtime prerequisites, module-level import behavior, library use and daily commands. This is a verbatim source snapshot; the beginner walkthrough in section15 explains the new installation choices in more detail.
 
 **Relation to main:** [[TIFR Vpn TUI#7.14 README.md|README.md]] — Shared account/SSO instructions remain; installation/library/developer sections now describe a real Python package.
 
-
-#### 13.28.1 L1–L16 · Purpose and quick start
-
+#### 13.28.1 L1–L32 · File contents
 
 ````markdown
 # TIFR VPN Python package
@@ -7443,22 +7392,7 @@ tifrvpn -d   # disconnect
 ```
 
 Unofficial. Tested on Fedora 44 with KeePassXC 2.8 and OpenConnect 9.12. These are terminal controls with a **graphical sign-in window**, not a headless VPN client. You need your own TIFR account and working authenticator enrollment. The official Ivanti client is not required.
-````
 
-**Line-by-line explanation**
-
-- **L1** — Rename the document to describe the Python package, replacing the earlier terminal-script-only title.
-- **L3–L6** — Introduce both the importable library and terminal commands while retaining the same gateway, cached-session reuse and vault-backed SSO purpose.
-- **L8** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L9–L12** — A physical line in the README section “TIFR VPN Python package”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L13** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L15** — A physical line in the README section “TIFR VPN Python package”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-
-
-#### 13.28.2 L17–L48 · 1. Install dependencies and commands · section 1
-
-
-````markdown
 ## 1. Install dependencies and commands
 
 Install these dependencies using your preferred package manager:
@@ -7469,72 +7403,100 @@ Install these dependencies using your preferred package manager:
   program for unlocking your GPG key.
 - **Desktop integration:** GTK 3, WebKitGTK 4.1, libsoup 3, libsecret, and their
   GObject introspection bindings, accessible through Python's PyGObject (`gi`).
-- **Python packages:** `cryptography` and `PySide6`; also `numpy` and `zxing-cpp`
-  if you use the optional Google Authenticator QR importer.
+- **Python packages:** `PyGObject` (imported as `gi`), `cryptography`, `PySide6`,
+  `numpy`, and `zxing-cpp`.
 - **Background sign-in (optional):** Xvfb, the `xvfb-run` wrapper, and `xauth`.
 
 Package names vary between distributions. The project's Python dependencies are
-declared in `pyproject.toml`. When using a virtual environment with system-installed
-PyGObject, create it from system Python with access to system site packages.
+declared in `pyproject.toml`. uv installs PyGObject into the project's own `.venv`,
+````
+
+**Line-by-line explanation**
+
+- **L1** — Rename the document to describe the Python package, replacing the earlier terminal-script-only title.
+- **L3–L6** — Introduce both the importable library and terminal commands while retaining the same gateway, cached-session reuse and vault-backed SSO purpose.
+- **L8** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L9–L12** — A physical line in the README section “TIFR VPN Python package”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L13** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L15** — A physical line in the README section “TIFR VPN Python package”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L17** — Comment for readers: 1. Install dependencies and commands. The comment documents intent or linter policy and is not executed.
+- **L19** — A physical line in the README section “1. Install dependencies and commands”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L21** — List Python 3.13+ as the runtime; the old Zsh launcher requirement disappears because command dispatch moved to Python. Other Linux services still remain necessary.
+- **L22–L26** — A physical line in the README section “1. Install dependencies and commands”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L27–L28** — List the Python distributions installed into the project environment, including PyGObject, whose import name is gi. QR use is optional, but its declared Python dependencies are installed and imported by the CLI.
+- **L29** — A physical line in the README section “1. Install dependencies and commands”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L31** — A physical line in the README section “1. Install dependencies and commands”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L32** — Explain that uv installs/builds the Python bindings in .venv, while their compiler and native development/runtime libraries must already be available from the OS.
+
+#### 13.28.2 L33–L64 · File contents
+
+````markdown
+building it and Pycairo for that environment's Python. This requires a C compiler
+and the native development libraries in addition to the runtime libraries. On
+Fedora, install the GI runtime/build prerequisites with:
+
+```sh
+sudo dnf install gcc pkgconf-pkg-config gobject-introspection-devel cairo-gobject-devel gtk3 webkit2gtk4.1 libsoup3 libsecret
+```
+
+The chosen Python also needs its development headers. uv-managed CPython includes
+these; for Fedora's system Python, install `python3-devel` as well. The packages
+above cover GI support; the VPN and credential tools listed earlier are still
+required separately.
+
+Imports are grouped at the top of each module. Importing the core package loads
+the Secret Service bindings and cryptography; importing the command adapters
+also loads Qt and the QR libraries, even for `--help`. The SSO worker loads its
+GTK/WebKit bindings at module import. Imports do not open dialogs, access the
+keyring, scan a camera, or start a VPN connection.
 
 NetworkManager must be running. Your desktop must provide a working, unlocked
 Secret Service keyring, such as GNOME Keyring. Minimal window-manager sessions
 may need desktop keyring and PolicyKit authentication-agent setup first.
 
-Install this checkout as a Python package, **as your normal user**. Create a
-virtual environment with access to your system Python bindings:
+Install this checkout as a Python package, **as your normal user**, after
+installing the system dependencies above:
 
 ```sh
-python3 -m venv --system-site-packages .venv
-.venv/bin/python -m pip install .
+uv sync --locked
 source .venv/bin/activate
 ```
 
-Use system Python 3.13 or newer when creating the environment. If you already
+uv uses the Python version in `.python-version` (currently 3.13) and creates an
 ````
 
 **Line-by-line explanation**
 
-- **L17** — Comment for readers: 1. Install dependencies and commands. The comment documents intent or linter policy and is not executed.
-- **L19** — A physical line in the README section “1. Install dependencies and commands”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L21** — List Python 3.13+ as the runtime; the old Zsh launcher requirement disappears because command dispatch moved to Python. Other Linux services still remain necessary.
-- **L22–L29** — A physical line in the README section “1. Install dependencies and commands”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L31–L33** — A physical line in the README section “1. Install dependencies and commands”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L35–L37** — A physical line in the README section “1. Install dependencies and commands”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L39–L40** — Recommend normal-user package installation in a virtual environment that can see compatible system-installed GI bindings.
-- **L42** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L43** — Create a .venv from the selected system Python, exposing its system site-packages so native PyGObject bindings may be available. This is a documentation example, not a command this guide runs against your existing .venv.
-- **L44** — Install the current checkout into that environment using its own interpreter's pip. The dot means the current project directory; a normal install uses installed package contents rather than following every later source edit.
-- **L45** — Activate the environment in the current shell so its bin directory is searched before older commands. Activation is a convenience; an explicit environment/bin executable path also works.
-- **L46** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L48** — Explain interpreter suitability, generated command locations and import availability. A preexisting virtual environment can differ from this recommendation; verify its interpreter and native binding visibility rather than assuming its name guarantees suitability.
+- **L33–L35** — Explain that uv installs/builds the Python bindings in .venv, while their compiler and native development/runtime libraries must already be available from the OS.
+- **L37** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L38** — Show the Fedora installation command for the GI compiler/build prerequisites and native GTK3/WebKit4.1/Soup 3/Secret libraries. It does not install the separate VPN or credential programs.
+- **L39** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L41–L44** — Distinguish interpreter headers from runtime libraries: the chosen Python needs matching development headers; uv-managed CPython provides its own, while Fedora system Python uses python3-devel.
+- **L46–L50** — Document the requested module-level imports and their consequence: dependencies load before operations, including CLI help, but imports do not themselves open dialogs, read the keyring, scan or connect.
+- **L52–L54** — A physical line in the README section “1. Install dependencies and commands”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L56–L57** — Begin installation after OS dependencies are installed, using the ordinary desktop user rather than a root-owned Python environment.
+- **L59** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L60** — Synchronize the isolated project environment from the checked-in lockfile; fail if that lockfile would need changing.
+- **L61** — Activate the environment in the current shell so its bin directory is searched before older commands. Activation is a convenience; an explicit environment/bin executable path also works.
+- **L62** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L64** — Explain the final Python 3.13 isolated-uv route: local PyGObject supplies gi, so Python 3.14 and system-site-packages are unnecessary. The explicit uv pip command is an alternative for another suitable environment.
 
+#### 13.28.3 L65–L96 · File contents
 
-#### 13.28.3 L49–L58 · 1. Install dependencies and commands · section 2
-
-
-```markdown
-have a suitable environment, activate it and run `python -m pip install .`.
+````markdown
+isolated `.venv`. `import gi` comes from its installed PyGObject dependency;
+neither Python 3.14 nor `--system-site-packages` is required. If you already
+have a suitable environment, you can instead run `uv pip install --python
+/path/to/environment/bin/python .`.
 The installation creates `tifrvpn`, `tifr-otp` and `tifr-import-totp` in that
 environment's command directory and makes `import tifrvpn` available.
 Activate the environment whenever you want to use its commands.
 
 Python dependencies are installed from `pyproject.toml`; the system dependencies
 listed above must be installed separately. After updating the checkout, rerun
-the package installation to update the installed version. For development,
-use the editable installation described below.
-```
+`uv sync --locked`. uv installs this checkout in editable mode; other package
+installation routes are described below.
 
-**Line-by-line explanation**
-
-- **L49–L52** — Explain interpreter suitability, generated command locations and import availability. A preexisting virtual environment can differ from this recommendation; verify its interpreter and native binding visibility rather than assuming its name guarantees suitability.
-- **L54–L57** — Separate Python package dependencies from system services/libraries, and distinguish reinstalling a normal installed copy from editable development.
-
-
-#### 13.28.4 L59–L90 · 2. Save your own login in KeePassXC · section 1
-
-
-````markdown
 ## 2. Save your own login in KeePassXC
 
 1. Create/open a **password-protected** database. The default location expected
@@ -7554,6 +7516,26 @@ tifr-import-totp          # scan using your webcam
 tifr-import-totp --image  # choose a QR image already on this computer
 ```
 
+````
+
+**Line-by-line explanation**
+
+- **L65–L68** — Explain the final Python 3.13 isolated-uv route: local PyGObject supplies gi, so Python 3.14 and system-site-packages are unnecessary. The explicit uv pip command is an alternative for another suitable environment.
+- **L69–L71** — Explain interpreter suitability, generated command locations and import availability. A preexisting virtual environment can differ from this recommendation; verify its interpreter and native binding visibility rather than assuming its name guarantees suitability.
+- **L73–L74** — Separate Python package dependencies from system services/libraries, and distinguish reinstalling a normal installed copy from editable development.
+- **L75–L76** — Repeat uv sync --locked after dependency/metadata updates. The uv project installation is editable; Python source edits are visible to new processes.
+- **L78** — Comment for readers: 2. Save your own login in KeePassXC. The comment documents intent or linter policy and is not executed.
+- **L80–L87** — A physical line in the README section “2. Save your own login in KeePassXC”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L89** — A physical line in the README section “2. Save your own login in KeePassXC”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L91** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L92** — A physical line in the README section “2. Save your own login in KeePassXC”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L93** — Comment for readers: Or, if the webcam is unsuitable:. The comment documents intent or linter policy and is not executed.
+- **L94** — A physical line in the README section “Or, if the webcam is unsuitable:”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L95** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+
+#### 13.28.4 L97–L128 · File contents
+
+````markdown
 On your phone: **Google Authenticator → Transfer accounts/codes → Export →
 select only TIFR**. Scan the export QR with this helper. Copy the resulting setup
 key into KeePassXC's TOTP setup dialog and use the displayed settings. It stays
@@ -7567,29 +7549,6 @@ and edit it **before continuing**:
 ```sh
 mkdir -p ~/.config/tifr-vpn
 cp config.example.json ~/.config/tifr-vpn/config.json
-````
-
-**Line-by-line explanation**
-
-- **L59** — Comment for readers: 2. Save your own login in KeePassXC. The comment documents intent or linter policy and is not executed.
-- **L61–L68** — A physical line in the README section “2. Save your own login in KeePassXC”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L70** — A physical line in the README section “2. Save your own login in KeePassXC”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L72** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L73** — A physical line in the README section “2. Save your own login in KeePassXC”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L74** — Comment for readers: Or, if the webcam is unsuitable:. The comment documents intent or linter policy and is not executed.
-- **L75** — A physical line in the README section “Or, if the webcam is unsuitable:”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L76** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L78–L83** — A physical line in the README section “Or, if the webcam is unsuitable:”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L85–L86** — A physical line in the README section “Or, if the webcam is unsuitable:”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L88** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L89** — A physical line in the README section “Or, if the webcam is unsuitable:”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L90** — Copy the now-present config.example.json into the user's config directory when customization is needed. Unlike main's historical snapshot, this example file exists on the branch; the command can replace an existing config, so it is an optional setup step rather than a daily command.
-
-
-#### 13.28.5 L91–L99 · 2. Save your own login in KeePassXC · section 2
-
-
-````markdown
 ```
 
 `database` and `password_file` accept absolute paths or `~/…`; `entry` is the
@@ -7598,18 +7557,7 @@ not passwords. `$XDG_CONFIG_HOME/tifr-vpn/config.json` is used when set.
 Environment variables `TIFR_KEEPASS_DATABASE`, `TIFR_KEEPASS_ENTRY` and
 `TIFR_KEEPASS_PASSWORD_FILE` override the corresponding config values.
 Key-file and hardware-token database unlocking are not implemented.
-````
 
-**Line-by-line explanation**
-
-- **L91** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L93–L98** — A physical line in the README section “Or, if the webcam is unsuitable:”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-
-
-#### 13.28.6 L100–L124 · 3. Encrypt the database password with GPG
-
-
-````markdown
 ## 3. Encrypt the database password with GPG
 
 Use your own encryption-capable GPG key. If you do not have one, create one:
@@ -7620,6 +7568,27 @@ gpg --list-secret-keys --keyid-format long --with-fingerprint
 ```
 
 Choose a key with encryption support and protect it with a passphrase. Then run:
+````
+
+**Line-by-line explanation**
+
+- **L97–L102** — A physical line in the README section “Or, if the webcam is unsuitable:”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L104–L105** — A physical line in the README section “Or, if the webcam is unsuitable:”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L107** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L108** — A physical line in the README section “Or, if the webcam is unsuitable:”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L109** — Copy the now-present config.example.json into the user's config directory when customization is needed. Unlike main's historical snapshot, this example file exists on the branch; the command can replace an existing config, so it is an optional setup step rather than a daily command.
+- **L110** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L112–L117** — A physical line in the README section “Or, if the webcam is unsuitable:”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L119** — Comment for readers: 3. Encrypt the database password with GPG. The comment documents intent or linter policy and is not executed.
+- **L121** — A physical line in the README section “3. Encrypt the database password with GPG”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L123** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L124–L125** — A physical line in the README section “3. Encrypt the database password with GPG”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L126** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L128** — A physical line in the README section “3. Encrypt the database password with GPG”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+
+#### 13.28.5 L129–L160 · File contents
+
+````markdown
 
 ```sh
 tifr-otp --setup
@@ -7634,27 +7603,7 @@ Your VPN password stays inside the KeePassXC database.
 
 Run `tifr-otp` once to check the generated code against your phone. It prints
 the current code to your terminal; don't share that output.
-````
 
-**Line-by-line explanation**
-
-- **L100** — Comment for readers: 3. Encrypt the database password with GPG. The comment documents intent or linter policy and is not executed.
-- **L102** — A physical line in the README section “3. Encrypt the database password with GPG”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L104** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L105–L106** — A physical line in the README section “3. Encrypt the database password with GPG”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L107** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L109** — A physical line in the README section “3. Encrypt the database password with GPG”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L111** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L112** — A physical line in the README section “3. Encrypt the database password with GPG”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L113** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L115–L120** — A physical line in the README section “3. Encrypt the database password with GPG”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L122–L123** — A physical line in the README section “3. Encrypt the database password with GPG”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-
-
-#### 13.28.7 L125–L156 · 4. Connect · section 1
-
-
-````markdown
 ## 4. Connect
 
 ```sh
@@ -7672,6 +7621,25 @@ Unlock GPG if prompted. If TIFR reports another active session, choose
 The window closes once the authenticated session is handed to NetworkManager.
 KeePassXC and your phone do not need to be open for daily connections.
 
+````
+
+**Line-by-line explanation**
+
+- **L130** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L131** — A physical line in the README section “3. Encrypt the database password with GPG”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L132** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L134–L139** — A physical line in the README section “3. Encrypt the database password with GPG”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L141–L142** — A physical line in the README section “3. Encrypt the database password with GPG”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L144** — Comment for readers: 4. Connect. The comment documents intent or linter policy and is not executed.
+- **L146** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L147–L148** — A physical line in the README section “4. Connect”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L149** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L151–L152** — A physical line in the README section “4. Connect”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L154–L159** — A physical line in the README section “4. Connect”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+
+#### 13.28.6 L161–L192 · File contents
+
+````markdown
 For background sign-in, use `tifrvpn -c --quiet` (or just `tifrvpn --quiet`).
 GPG unlocks on your normal desktop first if needed, then the SSO browser runs
 on a private Xvfb display. Terminal progress and errors remain visible. If TIFR
@@ -7687,43 +7655,13 @@ Optional shell shortcut: `alias tifr-quiet='tifrvpn -c --quiet'`.
 | `tifrvpn -d`             | Disconnect                                                   |
 | `tifrvpn -s`             | Show status, assigned addresses and DNS                      |
 | `tifrvpn`                | Toggle connection                                            |
-````
-
-**Line-by-line explanation**
-
-- **L125** — Comment for readers: 4. Connect. The comment documents intent or linter policy and is not executed.
-- **L127** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L128–L129** — A physical line in the README section “4. Connect”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L130** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L132–L133** — A physical line in the README section “4. Connect”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L135–L140** — A physical line in the README section “4. Connect”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L142–L147** — A physical line in the README section “4. Connect”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L149** — A physical line in the README section “4. Connect”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L151–L156** — A Markdown table row mapping the shown command/module to its documented behavior. Pipe characters separate columns; this is reference data rather than runtime code.
-
-
-#### 13.28.8 L157–L163 · 4. Connect · section 2
-
-
-```markdown
 | `tifrvpn --forget-login` | Clear this helper's cached sessions; leave any tunnel active |
 | `tifr-otp --setup`       | Replace the encrypted master password after changing it      |
 
 The applet can display/disconnect this connection. **Connect using `tifrvpn -c`**:
 clicking `tifr-ivanti` in nm-applet does not invoke this helper and may fail with
 `Unknown form … kc-form-login` on TIFR's SSO page.
-```
 
-**Line-by-line explanation**
-
-- **L157–L158** — A Markdown table row mapping the shown command/module to its documented behavior. Pipe characters separate columns; this is reference data rather than runtime code.
-- **L160–L162** — A physical line in the README section “4. Connect”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-
-
-#### 13.28.9 L164–L186 · Troubleshooting and storage
-
-
-```markdown
 ## Troubleshooting and storage
 
 - **Autofill stops:** check the saved entry, save the database, and confirm your
@@ -7734,6 +7672,20 @@ clicking `tifr-ivanti` in nm-applet does not invoke this helper and may fail wit
 - **Connection errors:** check `tifrvpn -s` and
   `journalctl -b -u NetworkManager --since '5 minutes ago'`. Remove personal
   information and authentication data before sharing diagnostics.
+````
+
+**Line-by-line explanation**
+
+- **L161–L166** — A physical line in the README section “4. Connect”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L168** — A physical line in the README section “4. Connect”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L170–L177** — A Markdown table row mapping the shown command/module to its documented behavior. Pipe characters separate columns; this is reference data rather than runtime code.
+- **L179–L181** — A physical line in the README section “4. Connect”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L183** — Comment for readers: Troubleshooting and storage. The comment documents intent or linter policy and is not executed.
+- **L185–L192** — A physical line in the README section “Troubleshooting and storage”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+
+#### 13.28.7 L193–L224 · File contents
+
+````markdown
 - **VPN service path:** the launcher currently checks
   `/usr/libexec/nm-openconnect-service`; other layouts require adapting it.
 
@@ -7746,20 +7698,7 @@ Keep the database, GPG keys, encrypted password file and authenticator QR images
 out of this repository. The `.gitignore` covers common secret-file formats.
 
 Setup reference: [KeePassXC TOTP guide](https://keepassxc.org/docs/KeePassXC_UserGuide#_adding_totp_to_an_entry).
-```
 
-**Line-by-line explanation**
-
-- **L164** — Comment for readers: Troubleshooting and storage. The comment documents intent or linter policy and is not executed.
-- **L166–L175** — A physical line in the README section “Troubleshooting and storage”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L177–L183** — A physical line in the README section “Troubleshooting and storage”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-- **L185** — A physical line in the README section “Troubleshooting and storage”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
-
-
-#### 13.28.10 L187–L218 · Python library and development · section 1
-
-
-````markdown
 ## Python library and development
 
 The import name is **`tifrvpn`**; the distribution name remains `tifrvpn-tui`.
@@ -7779,6 +7718,28 @@ uv pip install --python .venv/bin/python -e .
 An editable installation uses the source files directly, so Python code changes
 are available without reinstalling. Reinstall after changing package metadata
 or command entry points. System programs and GTK/WebKit/Secret Service bindings
+````
+
+**Line-by-line explanation**
+
+- **L193–L194** — A physical line in the README section “Troubleshooting and storage”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L196–L202** — A physical line in the README section “Troubleshooting and storage”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L204** — A physical line in the README section “Troubleshooting and storage”. Read it with adjacent wrapped lines as one instruction/explanation; the complete branch workflows above explain the operation, assumptions and distinction from main.
+- **L206** — Begin the branch's new Python-library/developer instructions.
+- **L208** — Distinguish import name tifrvpn from installed distribution metadata name tifrvpn-tui. The console commands are a third naming concern defined by project.scripts.
+- **L209–L210** — Introduce editable installation inside the chosen suitable Python environment.
+- **L212** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L213** — pip install -e . registers this source checkout as the implementation location for development; new interpreter processes see source edits without recopying these files.
+- **L214** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L216** — Introduce uv as an alternative package-installation frontend.
+- **L218** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L219** — Target the exact .venv interpreter explicitly when using uv, preventing accidental installation into another environment.
+- **L220** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L222–L224** — Explain that source edits and packaging metadata/entry-point edits have different reinstall needs. Editable installation still does not install/replace NetworkManager or GI system packages.
+
+#### 13.28.8 L225–L256 · File contents
+
+````markdown
 are still required for the features that use them.
 
 ```python
@@ -7791,35 +7752,7 @@ print(connection.state, connection.devices)
 connection = tifrvpn.connect(quiet=True, on_progress=print)
 tifrvpn.disconnect()
 ```
-````
 
-**Line-by-line explanation**
-
-- **L187** — Begin the branch's new Python-library/developer instructions.
-- **L189** — Distinguish import name tifrvpn from installed distribution metadata name tifrvpn-tui. The console commands are a third naming concern defined by project.scripts.
-- **L190–L191** — Introduce editable installation inside the chosen suitable Python environment.
-- **L193** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L194** — pip install -e . registers this source checkout as the implementation location for development; new interpreter processes see source edits without recopying these files.
-- **L195** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L197** — Introduce uv as an alternative package-installation frontend.
-- **L199** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L200** — Target the exact .venv interpreter explicitly when using uv, preventing accidental installation into another environment.
-- **L201** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L203–L206** — Explain that source edits and packaging metadata/entry-point edits have different reinstall needs. Editable installation still does not install/replace NetworkManager or GI system packages.
-- **L208** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L209** — Importing tifrvpn loads definitions and public names; it does not connect immediately.
-- **L211** — Actually call the read-only status operation; this is the point when networking tools/service are queried.
-- **L212** — Print state and computed device tuple, showing the library returns data rather than printing status itself.
-- **L214** — Comment ties library calls to their equivalent user-facing commands.
-- **L215** — Synchronously connect with quiet mode and print progress via an explicitly supplied callback. The worker's captured messages currently arrive after its subprocess finishes, not continuously during its run.
-- **L216** — Call synchronous disconnect; this example line performs a real state-changing operation if a reader executes it with their configured environment.
-- **L217** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-
-
-#### 13.28.11 L219–L250 · Python library and development · section 2
-
-
-````markdown
 `setup()` creates or updates the NetworkManager profile and returns its UUID.
 `forget_login()` clears saved sign-in state without disconnecting a tunnel.
 `status()`, `connect()` and `disconnect()` return a frozen `VPNStatus` with
@@ -7839,6 +7772,28 @@ settings = Config(
     database=Path("~/Documents/KeePass/Passwords.kdbx"),
     password_file=Path("~/.local/share/tifr-vpn/keepass-password.gpg"),
     entry="VPN/TIFR",
+````
+
+**Line-by-line explanation**
+
+- **L225** — Explain that source edits and packaging metadata/entry-point edits have different reinstall needs. Editable installation still does not install/replace NetworkManager or GI system packages.
+- **L227** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L228** — Importing tifrvpn loads definitions and public names; it does not connect immediately.
+- **L230** — Actually call the read-only status operation; this is the point when networking tools/service are queried.
+- **L231** — Print state and computed device tuple, showing the library returns data rather than printing status itself.
+- **L233** — Comment ties library calls to their equivalent user-facing commands.
+- **L234** — Synchronously connect with quiet mode and print progress via an explicitly supplied callback. The worker's captured messages currently arrive after its subprocess finishes, not continuously during its run.
+- **L235** — Call synchronous disconnect; this example line performs a real state-changing operation if a reader executes it with their configured environment.
+- **L236** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L238–L244** — Document operation results: setup returns UUID; forget\_login returns no value; status/connect/disconnect return VPNStatus with preserved transitions, device parsing and changed flags; expected failures carry VPNError.returncode.
+- **L246–L247** — Explain direct Config injection alongside defaults/JSON/environment, without rewriting the caller's process environment to customize one connect attempt.
+- **L249** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L250–L251** — Import Path, settings/error types and the public connect operation for the next example.
+- **L253–L256** — Construct immutable settings for a particular database/ciphertext/entry. Path('~/...') is normalized by Config.\_\_post\_init\_\_, which expands ~ and checks absolute paths.
+
+#### 13.28.9 L257–L288 · File contents
+
+````markdown
 )
 try:
     connection = connect(config=settings)
@@ -7851,24 +7806,7 @@ windows, or contact the server. VPN operations are synchronous and may open
 sign-in or GPG dialogs; `quiet=True` hides the SSO browser using Xvfb. Progress
 is sent to the optional callback. With no callback, the controller does not
 print progress. The CLI uses the callback for its terminal messages.
-````
 
-**Line-by-line explanation**
-
-- **L219–L225** — Document operation results: setup returns UUID; forget\_login returns no value; status/connect/disconnect return VPNStatus with preserved transitions, device parsing and changed flags; expected failures carry VPNError.returncode.
-- **L227–L228** — Explain direct Config injection alongside defaults/JSON/environment, without rewriting the caller's process environment to customize one connect attempt.
-- **L230** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L231–L232** — Import Path, settings/error types and the public connect operation for the next example.
-- **L234–L238** — Construct immutable settings for a particular database/ciphertext/entry. Path('~/...') is normalized by Config.\_\_post\_init\_\_, which expands ~ and checks absolute paths.
-- **L239–L242** — Catch expected VPNError while making a real connect call with explicit settings. An embedding application can decide how to present/retry the failure rather than having the library terminate it.
-- **L243** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L245–L249** — State import safety and synchronous operation behavior. No callback means no public-controller progress printing; actual operations may still open GPG/sign-in/keyring prompts. Current auth worker stderr is captured and replayed after completion.
-
-
-#### 13.28.12 L251–L282 · Python library and development · section 3
-
-
-````markdown
 Specialized helpers are available through their modules:
 
 ```python
@@ -7888,6 +7826,25 @@ code = get_code()  # returns the KeePassXC TOTP rather than printing it
 | `auth` | Session validation, worker launch and Xvfb lifecycle |
 | `totp` | Authenticator export decoding and TOTP calculation |
 | `gui` | SSO window, credential setup dialogs and QR importer |
+````
+
+**Line-by-line explanation**
+
+- **L257** — Construct immutable settings for a particular database/ciphertext/entry. Path('~/...') is normalized by Config.\_\_post\_init\_\_, which expands ~ and checks absolute paths.
+- **L258–L261** — Catch expected VPNError while making a real connect call with explicit settings. An embedding application can decide how to present/retry the failure rather than having the library terminate it.
+- **L262** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L264–L268** — State import safety and synchronous operation behavior. No callback means no public-controller progress printing; actual operations may still open GPG/sign-in/keyring prompts. Current auth worker stderr is captured and replayed after completion.
+- **L270** — Introduce more specialized module APIs below the top-level public VPN operations.
+- **L272** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L273** — Import nonprinting current-code retrieval from the credential layer.
+- **L274** — Import pure migration decoding and TOTP calculation from the algorithm module; these functions operate on supplied data rather than opening a webcam.
+- **L276** — Get the current KeePassXC TOTP as a string. It can unlock GPG/read the vault when actually called, but does not intentionally print the result.
+- **L277** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L279–L288** — Map each package module to its single responsibility. The reorganized files expose boundaries for reuse/testing rather than forcing every consumer through one script entry point.
+
+#### 13.28.10 L289–L305 · File contents
+
+````markdown
 | `cli` | Arguments, terminal output, notifications and exit codes |
 | `_sso_worker` | Private isolated WebKit subprocess entry point |
 
@@ -7901,70 +7858,38 @@ Offline checks after installing the package:
 python -B -m unittest discover -s tests -v
 uv build
 ```
-````
-
-**Line-by-line explanation**
-
-- **L251** — Introduce more specialized module APIs below the top-level public VPN operations.
-- **L253** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L254** — Import nonprinting current-code retrieval from the credential layer.
-- **L255** — Import pure migration decoding and TOTP calculation from the algorithm module; these functions operate on supplied data rather than opening a webcam.
-- **L257** — Get the current KeePassXC TOTP as a string. It can unlock GPG/read the vault when actually called, but does not intentionally print the result.
-- **L258** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L260–L271** — Map each package module to its single responsibility. The reorganized files expose boundaries for reuse/testing rather than forcing every consumer through one script entry point.
-- **L273–L275** — Document that python -m tifrvpn and the generated command share CLI implementation and that project.scripts replaces the deleted root wrappers/installer in the current snapshot.
-- **L277** — The following test commands assume the package is installed in the interpreter running them; PYTHONPATH=src alone is not sufficient for the installation tests.
-- **L279** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-- **L280** — Run unittest discovery using the selected interpreter, suppress bytecode writes with -B and print test names with -v.
-- **L281** — Build distributable artifacts with uv; this guide separately verified an offline build into a temporary documentation directory.
-- **L282** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
-
-
-#### 13.28.13 L283–L286 · Python library and development · section 4
-
-
-```markdown
 
 Tests use fake commands and services; they do not access personal credentials,
 change NetworkManager profiles or connect to the VPN. A live desktop sign-in
 and tunnel connection still need verification with your own TIFR account.
-```
+````
 
 **Line-by-line explanation**
 
-- **L284–L286** — Clarify test scope: fakes/temporary locations avoid live credentials and VPN changes. Passing 50 offline tests and building a wheel does not establish a real desktop sign-in/tunnel on this machine.
+- **L289–L290** — Map each package module to its single responsibility. The reorganized files expose boundaries for reuse/testing rather than forcing every consumer through one script entry point.
+- **L292–L294** — Document that python -m tifrvpn and the generated command share CLI implementation and that project.scripts replaces the deleted root wrappers/installer in the current snapshot.
+- **L296** — The following test commands assume the package is installed in the interpreter running them; PYTHONPATH=src alone is not sufficient for the installation tests.
+- **L298** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L299** — Run unittest discovery using the selected interpreter, suppress bytecode writes with -B and print test names with -v.
+- **L300** — Build distributable artifacts with uv; this guide separately verified an offline build into a temporary documentation directory.
+- **L301** — Open/close the displayed Markdown fenced example block. Its contents are instructions/examples for the reader, not code automatically executed by opening README.
+- **L303–L305** — Clarify test scope: fakes/temporary locations avoid live credentials and VPN changes. Passing 50 offline tests and building a wheel does not establish a real desktop sign-in/tunnel on this machine.
 
-
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.29 Package source — uv.lock
 
-
-The redundant separately distributed argparse package and its references disappear; other locked dependencies remain.
+The lockfile records the exact dependency selection and artifact metadata, now including PyGObject 3.58.1 and its Pycairo 1.29.2 dependency. It is generated project data, not code to execute and not an installation of GTK or NetworkManager. The complete selected package records are preserved below.
 
 **Relation to main:** [[TIFR Vpn TUI#7.15 uv.lock|uv.lock]] — The redundant separately distributed argparse package and its references disappear; other locked dependencies remain.
 
-
-#### 13.29.1 L1–L4 · Lockfile structure
-
+#### 13.29.1 L1–L32 · File contents
 
 ```toml
 version = 1
 revision = 5
 requires-python = ">=3.13"
-```
 
-**Line-by-line explanation**
-
-- **L1** — Lockfile format version, not your project version or Python version. uv reads it to understand the file structure.
-- **L2** — Record the lockfile format revision used by the generating uv version. This is tooling metadata, not a count of Git commits.
-- **L3** — Record that the resolved project targets Python 3.13 or newer. Different wheel filenames below can describe compatible build tags rather than changing that overall requirement.
-
-
-#### 13.29.2 L5–L36 · Locked package cffi · section 1
-
-
-```toml
 [[package]]
 name = "cffi"
 version = "2.1.1"
@@ -7993,14 +7918,13 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/d9/99/c4b0c17cacdc9c3b8f280026286a9826d6a208c0f047591a3c3ce99b91fd/cffi-2.1.1-cp314-cp314-macosx_10_15_x86_64.whl", hash = "sha256:d28630f5854ab07ab1fd4aba756de52326c82e6be15d414b12793f1975048b54", size = 184964, upload-time = "2026-08-03T21:20:19.708Z" },
     { url = "https://files.pythonhosted.org/packages/b3/a9/9db617d05d7367c1ad0ab00b3aa6e6f9281edd689b4ee9ea0e5a84e89c97/cffi-2.1.1-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:661c298b4821edebead0c91edd2b00374d67ad7c5a1f7a91d4442633b79d6a72", size = 184962, upload-time = "2026-08-03T21:20:20.833Z" },
     { url = "https://files.pythonhosted.org/packages/67/b8/b42132ca113dc567d37684437b46ca1dafc885902b02a110a02d5b511857/cffi-2.1.1-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:58acb8ab8e295e6c5ea12f888cbb13cf21511ef2a3303a23f4325c29d17fe5c1", size = 222328, upload-time = "2026-08-03T21:20:22.118Z" },
-    { url = "https://files.pythonhosted.org/packages/80/10/c5c0cbf0a657aecf59ef511409734230bf556f05a0d6c9eed7aa5c0a0166/cffi-2.1.1-cp314-cp314-manylinux2014_ppc64le.manylinux_2_17_ppc64le.whl", hash = "sha256:456a61fa52d579ebf9df2e9552ead5129855dbaff6c1e5a9b1bc408809bdc062", size = 209985, upload-time = "2026-08-03T21:20:23.401Z" },
-    { url = "https://files.pythonhosted.org/packages/d5/6c/bfa0b87b03b9238148beca990292843c9396ba069b54496596594173de7b/cffi-2.1.1-cp314-cp314-manylinux2014_s390x.manylinux_2_17_s390x.whl", hash = "sha256:a4f00aa42f75d6e4595e8866e748cc1705adc0cddfeb2ca86d0d03993d63ba03", size = 208530, upload-time = "2026-08-03T21:20:24.628Z" },
-    { url = "https://files.pythonhosted.org/packages/e9/02/4e7d553a7ac4b4238b38b3c1b80d486e9d4436f8d2acbf87a0997fe3f402/cffi-2.1.1-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:b0431303acaea1089ad4b3e9ce4e6518193def1118d4073ca848635ee4ea2e96", size = 221525, upload-time = "2026-08-03T21:20:25.758Z" },
-    { url = "https://files.pythonhosted.org/packages/82/1d/a4aaf9babd75acb4d5f223bff71533bee748dd770a382619a798960ee9ba/cffi-2.1.1-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:64faea20f4e2613363a1a9b9c7dd73058f3ecd00133a511e72ad7c511658f527", size = 225053, upload-time = "2026-08-03T21:20:26.985Z" },
 ```
 
 **Line-by-line explanation**
 
+- **L1** — Lockfile format version, not your project version or Python version. uv reads it to understand the file structure.
+- **L2** — Record the lockfile format revision used by the generating uv version. This is tooling metadata, not a count of Git commits.
+- **L3** — Record that the resolved project targets Python 3.13 or newer. Different wheel filenames below can describe compatible build tags rather than changing that overall requirement.
 - **L5** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
 - **L6** — Name this locked distribution cffi. Names identify packages to install; they are not necessarily identical to Python import names (for example pyside6 is imported as PySide6).
 - **L7** — Pin cffi to this exact release version. A lock chooses one version within the declared constraints; it does not mean this is the newest release available.
@@ -8029,16 +7953,14 @@ wheels = [
 - **L30** — One prebuilt wheel choice: cffi-2.1.1-cp314-cp314-macosx\_10\_15\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
 - **L31** — One prebuilt wheel choice: cffi-2.1.1-cp314-cp314-macosx\_11\_0\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
 - **L32** — One prebuilt wheel choice: cffi-2.1.1-cp314-cp314-manylinux2014\_aarch64.manylinux\_2\_17\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
-- **L33** — One prebuilt wheel choice: cffi-2.1.1-cp314-cp314-manylinux2014\_ppc64le.manylinux\_2\_17\_ppc64le.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
-- **L34** — One prebuilt wheel choice: cffi-2.1.1-cp314-cp314-manylinux2014\_s390x.manylinux\_2\_17\_s390x.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
-- **L35** — One prebuilt wheel choice: cffi-2.1.1-cp314-cp314-manylinux2014\_x86\_64.manylinux\_2\_17\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
-- **L36** — One prebuilt wheel choice: cffi-2.1.1-cp314-cp314-musllinux\_1\_2\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
 
-
-#### 13.29.3 L37–L68 · Locked package cffi · section 2
-
+#### 13.29.2 L33–L64 · File contents
 
 ```toml
+    { url = "https://files.pythonhosted.org/packages/80/10/c5c0cbf0a657aecf59ef511409734230bf556f05a0d6c9eed7aa5c0a0166/cffi-2.1.1-cp314-cp314-manylinux2014_ppc64le.manylinux_2_17_ppc64le.whl", hash = "sha256:456a61fa52d579ebf9df2e9552ead5129855dbaff6c1e5a9b1bc408809bdc062", size = 209985, upload-time = "2026-08-03T21:20:23.401Z" },
+    { url = "https://files.pythonhosted.org/packages/d5/6c/bfa0b87b03b9238148beca990292843c9396ba069b54496596594173de7b/cffi-2.1.1-cp314-cp314-manylinux2014_s390x.manylinux_2_17_s390x.whl", hash = "sha256:a4f00aa42f75d6e4595e8866e748cc1705adc0cddfeb2ca86d0d03993d63ba03", size = 208530, upload-time = "2026-08-03T21:20:24.628Z" },
+    { url = "https://files.pythonhosted.org/packages/e9/02/4e7d553a7ac4b4238b38b3c1b80d486e9d4436f8d2acbf87a0997fe3f402/cffi-2.1.1-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:b0431303acaea1089ad4b3e9ce4e6518193def1118d4073ca848635ee4ea2e96", size = 221525, upload-time = "2026-08-03T21:20:25.758Z" },
+    { url = "https://files.pythonhosted.org/packages/82/1d/a4aaf9babd75acb4d5f223bff71533bee748dd770a382619a798960ee9ba/cffi-2.1.1-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:64faea20f4e2613363a1a9b9c7dd73058f3ecd00133a511e72ad7c511658f527", size = 225053, upload-time = "2026-08-03T21:20:26.985Z" },
     { url = "https://files.pythonhosted.org/packages/81/10/5dc0e7bdd18e22107054288283380fc97a06ae3f1656a106908d666a3c88/cffi-2.1.1-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:5c58fe613dc5e5336357eff555824a314d8e43282600435c8d1cb6a7a2fedd13", size = 223213, upload-time = "2026-08-03T21:20:28.277Z" },
     { url = "https://files.pythonhosted.org/packages/0b/e9/d0061c364cde06ee43168a0d076ac1da512cbc380d44767b844ba34fe2b6/cffi-2.1.1-cp314-cp314-win32.whl", hash = "sha256:1a18a57b58cfb21fc28d72e876acf10eaed67a1ed96226f92af4df681d571c4c", size = 177682, upload-time = "2026-08-03T21:20:44.288Z" },
     { url = "https://files.pythonhosted.org/packages/a7/06/1c3e01e3ba14c39f6d10bfbac52753b7e22259e38088e5cfe1d704918690/cffi-2.1.1-cp314-cp314-win_amd64.whl", hash = "sha256:3222ba5d678f80a030e6afbcc33dc1ae5cb45facabb61cee2c7016b8432fde48", size = 187949, upload-time = "2026-08-03T21:20:45.623Z" },
@@ -8067,14 +7989,14 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/f8/7e/8debeb04f1ab9fe2a6963964cd6f1aaf7192627b83926586a6a4e089c9fa/cffi-2.1.1-cp315-cp315-win32.whl", hash = "sha256:4f42141fc14250de6dde5ee7ea4432be017252d91f19c5ad043c084cea629cac", size = 177683, upload-time = "2026-08-03T21:21:14.901Z" },
     { url = "https://files.pythonhosted.org/packages/e0/31/5158704cc474ab65c1647932e88be78dc0873f47130e253be38bcaf13d01/cffi-2.1.1-cp315-cp315-win_amd64.whl", hash = "sha256:e6e8cff14d6fb0be70a09c0bdc58096f501952d04624ebf867e0e56da2df8960", size = 187897, upload-time = "2026-08-03T21:21:16.108Z" },
     { url = "https://files.pythonhosted.org/packages/cc/4b/b3a2da8570c704ffc0f9762cdc3ec0f02c8573798e0b5cf7f11c82bbb70f/cffi-2.1.1-cp315-cp315-win_arm64.whl", hash = "sha256:27350daa11d4f10c540e6e89dada4c54feb7256ad03e9a4dc075ebad7ba360d1", size = 182935, upload-time = "2026-08-03T21:21:17.271Z" },
-    { url = "https://files.pythonhosted.org/packages/d0/ef/5443574510a1207e6f6bc38ba6e1f1de36cb48fef07b2728bb896a21f430/cffi-2.1.1-cp315-cp315t-macosx_10_15_x86_64.whl", hash = "sha256:c26608d2222fb1e94487e4a387d85f13eb55d5ed725cb25a0c589ac4ee60e7bc", size = 188464, upload-time = "2026-08-03T21:21:01.163Z" },
-    { url = "https://files.pythonhosted.org/packages/7e/ae/a56fa8c4686ad50e148fcbc8d3ae0d03915ff5c30d795058988c24118cef/cffi-2.1.1-cp315-cp315t-macosx_11_0_arm64.whl", hash = "sha256:4be96343e422f2dfcd12ab5c9f5aebe03f82f737c6bffeca6830b3875cb44aab", size = 188262, upload-time = "2026-08-03T21:21:02.382Z" },
-    { url = "https://files.pythonhosted.org/packages/53/b2/6187f46f2912276a3ae284076109cc5c8680482f11f766ccf26db4a86427/cffi-2.1.1-cp315-cp315t-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:937c0052c05a31ca1daf18de3158eed4dbfcb9cc107adbea227728d647be701e", size = 223779, upload-time = "2026-08-03T21:21:03.553Z" },
-    { url = "https://files.pythonhosted.org/packages/8a/f6/c3ad28bd19f77047a03084424fbd4cbe997303267c14423737324be0385d/cffi-2.1.1-cp315-cp315t-manylinux2014_ppc64le.manylinux_2_17_ppc64le.whl", hash = "sha256:df423d40ee8654634421812bc3b196da3f9bd7d32929da813f8394c4348a5358", size = 211520, upload-time = "2026-08-03T21:21:04.863Z" },
 ```
 
 **Line-by-line explanation**
 
+- **L33** — One prebuilt wheel choice: cffi-2.1.1-cp314-cp314-manylinux2014\_ppc64le.manylinux\_2\_17\_ppc64le.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
+- **L34** — One prebuilt wheel choice: cffi-2.1.1-cp314-cp314-manylinux2014\_s390x.manylinux\_2\_17\_s390x.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
+- **L35** — One prebuilt wheel choice: cffi-2.1.1-cp314-cp314-manylinux2014\_x86\_64.manylinux\_2\_17\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
+- **L36** — One prebuilt wheel choice: cffi-2.1.1-cp314-cp314-musllinux\_1\_2\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
 - **L37** — One prebuilt wheel choice: cffi-2.1.1-cp314-cp314-musllinux\_1\_2\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
 - **L38** — One prebuilt wheel choice: cffi-2.1.1-cp314-cp314-win32.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
 - **L39** — One prebuilt wheel choice: cffi-2.1.1-cp314-cp314-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
@@ -8103,16 +8025,14 @@ wheels = [
 - **L62** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315-win32.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
 - **L63** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
 - **L64** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
-- **L65** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-macosx\_10\_15\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
-- **L66** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-macosx\_11\_0\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
-- **L67** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-manylinux2014\_aarch64.manylinux\_2\_17\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
-- **L68** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-manylinux2014\_ppc64le.manylinux\_2\_17\_ppc64le.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
 
-
-#### 13.29.4 L69–L77 · Locked package cffi · section 3
-
+#### 13.29.3 L65–L96 · File contents
 
 ```toml
+    { url = "https://files.pythonhosted.org/packages/d0/ef/5443574510a1207e6f6bc38ba6e1f1de36cb48fef07b2728bb896a21f430/cffi-2.1.1-cp315-cp315t-macosx_10_15_x86_64.whl", hash = "sha256:c26608d2222fb1e94487e4a387d85f13eb55d5ed725cb25a0c589ac4ee60e7bc", size = 188464, upload-time = "2026-08-03T21:21:01.163Z" },
+    { url = "https://files.pythonhosted.org/packages/7e/ae/a56fa8c4686ad50e148fcbc8d3ae0d03915ff5c30d795058988c24118cef/cffi-2.1.1-cp315-cp315t-macosx_11_0_arm64.whl", hash = "sha256:4be96343e422f2dfcd12ab5c9f5aebe03f82f737c6bffeca6830b3875cb44aab", size = 188262, upload-time = "2026-08-03T21:21:02.382Z" },
+    { url = "https://files.pythonhosted.org/packages/53/b2/6187f46f2912276a3ae284076109cc5c8680482f11f766ccf26db4a86427/cffi-2.1.1-cp315-cp315t-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:937c0052c05a31ca1daf18de3158eed4dbfcb9cc107adbea227728d647be701e", size = 223779, upload-time = "2026-08-03T21:21:03.553Z" },
+    { url = "https://files.pythonhosted.org/packages/8a/f6/c3ad28bd19f77047a03084424fbd4cbe997303267c14423737324be0385d/cffi-2.1.1-cp315-cp315t-manylinux2014_ppc64le.manylinux_2_17_ppc64le.whl", hash = "sha256:df423d40ee8654634421812bc3b196da3f9bd7d32929da813f8394c4348a5358", size = 211520, upload-time = "2026-08-03T21:21:04.863Z" },
     { url = "https://files.pythonhosted.org/packages/a0/cd/ccac9013a5bd9fd764de118674ab9c805b5ca10c19270d90ee273f8b2240/cffi-2.1.1-cp315-cp315t-manylinux2014_s390x.manylinux_2_17_s390x.whl", hash = "sha256:a730a083190634c65cca36ba5f489531576ebd79bcd5c8e172130f6453127231", size = 210673, upload-time = "2026-08-03T21:21:06.223Z" },
     { url = "https://files.pythonhosted.org/packages/52/86/2976131c639aead931c5bee5aba67e4b09fbeb8018b6f282f70803f923a7/cffi-2.1.1-cp315-cp315t-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:363e05fa78e15116c3c32c210ee36884fd6b9afa6d440e47112c3bd511d64cb6", size = 223835, upload-time = "2026-08-03T21:21:07.539Z" },
     { url = "https://files.pythonhosted.org/packages/ac/0c/33a7aeab2f9c76918c52e084beb39c570db3588133412929e8ec06fab90b/cffi-2.1.1-cp315-cp315t-musllinux_1_2_aarch64.whl", hash = "sha256:770de9db11e84213beec501cfcaa013b019820ca881e03344dea5844f7876d94", size = 226705, upload-time = "2026-08-03T21:21:08.774Z" },
@@ -8121,24 +8041,7 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/9b/b5/ba2b299993c26577d529b6ae29841f9e15b9fcf004d65f423f4fcf94ade9/cffi-2.1.1-cp315-cp315t-win_amd64.whl", hash = "sha256:d9c275eaacd24aa73f94ffd6de08fc3f932424d8b6c376f4bed7cde376fe7bc3", size = 193772, upload-time = "2026-08-03T21:21:12.39Z" },
     { url = "https://files.pythonhosted.org/packages/aa/29/35e016098c814cd93de9cd320c66b5bfba14dc6ecedd3cb518fa7c408c69/cffi-2.1.1-cp315-cp315t-win_arm64.whl", hash = "sha256:d18e5ac0f2f03f4f518d3e23db0f0cad7faa1da8620e9c09461d443bbf6e6692", size = 186360, upload-time = "2026-08-03T21:21:13.636Z" },
 ]
-```
 
-**Line-by-line explanation**
-
-- **L69** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-manylinux2014\_s390x.manylinux\_2\_17\_s390x.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
-- **L70** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-manylinux2014\_x86\_64.manylinux\_2\_17\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
-- **L71** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-musllinux\_1\_2\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
-- **L72** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-musllinux\_1\_2\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
-- **L73** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-win32.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
-- **L74** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
-- **L75** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
-- **L76** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
-
-
-#### 13.29.5 L78–L109 · Locked package cryptography · section 1
-
-
-```toml
 [[package]]
 name = "cryptography"
 version = "50.0.2"
@@ -8158,23 +8061,22 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/71/37/6202e488cc1eb625ea110c292c6bda92823176e023f427d8d5660ce8d632/cryptography-50.0.2-cp311-abi3-manylinux_2_34_aarch64.whl", hash = "sha256:87e9ce85beb6b328ba370cc6e6aea483c92617b4c95b1d33a49297eb662bfb04", size = 4737859, upload-time = "2026-09-30T14:43:59.541Z" },
     { url = "https://files.pythonhosted.org/packages/8f/30/e86d7d518489b0ae2497091a35287abcb1a2ce4037837a34afbe9b1d6964/cryptography-50.0.2-cp311-abi3-manylinux_2_34_ppc64le.whl", hash = "sha256:f265528741e048bce55c3463ed721fb0aa45a5888d8add8cfeccb3035451bbdc", size = 5324103, upload-time = "2026-09-30T14:44:01.901Z" },
     { url = "https://files.pythonhosted.org/packages/d3/69/2c833a049475e0a3444e94c7d0aca0aa51d166374a449b09e92ac98138de/cryptography-50.0.2-cp311-abi3-manylinux_2_34_x86_64.whl", hash = "sha256:9dab55f57c74c3cad24c323bacbbd04be4705ba6eb0d92e920b1fc4837ed5079", size = 4752576, upload-time = "2026-09-30T14:44:04.545Z" },
-    { url = "https://files.pythonhosted.org/packages/6c/5d/906970b83bbfc1f5bbfb677a143c181f2801f23b6a7204a3b47c42c97e65/cryptography-50.0.2-cp311-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:25784ce8b9621c90c643efb9e1e2162ab3b0224cae446ad5e70e7fcb1ce18b51", size = 4870819, upload-time = "2026-09-30T14:44:06.884Z" },
-    { url = "https://files.pythonhosted.org/packages/68/e3/f2298d3bb55e0c4a91841ec4d01b3f020ba8c5fbf15ccdcc6dcf03f97025/cryptography-50.0.2-cp311-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:85d0d9a31b9098e98534226d5686b47264b95e62ce459dc2e62fdfc809f9fe93", size = 5030152, upload-time = "2026-09-30T14:44:09.443Z" },
-    { url = "https://files.pythonhosted.org/packages/9a/4f/adfc442765721292fff86d314ce385d3249d22db42295c0dd057727b60f3/cryptography-50.0.2-cp311-abi3-win_amd64.whl", hash = "sha256:7afa5a6602a9f29af1f3a2965f831bae7c9d5d597b7cbb716d41ab3b7d89879c", size = 3824692, upload-time = "2026-09-30T14:44:11.671Z" },
-    { url = "https://files.pythonhosted.org/packages/ce/cb/52eb3770c0d0be2702a98c6e96065ddc0a2877cf0845aa9c23397c142cd4/cryptography-50.0.2-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:f785f6161f202ab04d8ca194158968798e480ca058943907972da5f12e2881e8", size = 3892731, upload-time = "2026-09-30T14:44:13.485Z" },
-    { url = "https://files.pythonhosted.org/packages/19/8e/aa1fc533d4546b127b45de8aa024eb5933d23eff9debfe25931e56861095/cryptography-50.0.2-cp314-cp314t-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:0ecbc5652bdb6fc9eaf89a7d196e20941adfe812f43bc4ca05d9150496821047", size = 4710431, upload-time = "2026-09-30T14:44:15.427Z" },
-    { url = "https://files.pythonhosted.org/packages/6a/64/72bc3f75176e7e406b748a3e3830432b8c51297b38368713df04dc04898a/cryptography-50.0.2-cp314-cp314t-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:ab50ee449bf968271e820086f10a33d101dd060370abc10bcd22279be2656539", size = 4694824, upload-time = "2026-09-30T14:44:17.69Z" },
-    { url = "https://files.pythonhosted.org/packages/4e/c6/62c77550edfa5ca3f14bf44a1e6739b9fa09d6e998a11d97ed8213bccc98/cryptography-50.0.2-cp314-cp314t-manylinux_2_28_aarch64.whl", hash = "sha256:a9f7355e6fab51f6c369b86fb7571cffa05edee2c2121e0380a37fb9ac1cd5c1", size = 4716967, upload-time = "2026-09-30T14:44:19.661Z" },
-    { url = "https://files.pythonhosted.org/packages/f4/37/cce70f150c432914460157a6ecc161752e053aa5ec0ef3b3f7dc6e31039a/cryptography-50.0.2-cp314-cp314t-manylinux_2_28_ppc64le.whl", hash = "sha256:94e5e9f108ee10471288214d3d233fbfbb492840a8457eb85178d643ddeb32c7", size = 5328676, upload-time = "2026-09-30T14:44:21.744Z" },
-    { url = "https://files.pythonhosted.org/packages/aa/9a/6f2f0304d634ceafdeaf23e84537336664ac419b5d07611675c2ad3f6b7a/cryptography-50.0.2-cp314-cp314t-manylinux_2_28_x86_64.whl", hash = "sha256:241449bf940a5d27309bd317e6f9a2af6932113818bb2b8f5c59ddc7ef16da18", size = 4727698, upload-time = "2026-09-30T14:44:24.178Z" },
-    { url = "https://files.pythonhosted.org/packages/1d/de/66bcf9244d118663b2e1aaded8990f4640e3d7b7411870a5765f252074d2/cryptography-50.0.2-cp314-cp314t-manylinux_2_31_armv7l.whl", hash = "sha256:d8947001be83df1394050758ce0e745dd74fb134eef0a4b5124208dfc3a68c37", size = 4354821, upload-time = "2026-09-30T14:44:26.263Z" },
-    { url = "https://files.pythonhosted.org/packages/bd/e6/db28a28c7b6c676addce89136de3d8db49ea825a8c863472e36e42ead4ad/cryptography-50.0.2-cp314-cp314t-manylinux_2_34_aarch64.whl", hash = "sha256:4a20ce1e5cb4284a86692fdcba7cb8754185c6b2e5c56fcef3751cf451d3cdc2", size = 4716748, upload-time = "2026-09-30T14:44:28.447Z" },
-    { url = "https://files.pythonhosted.org/packages/30/96/01546c7f69ea0e2ab790a2e4f0934a4052fb9b388147fbf83c2fd72f1e57/cryptography-50.0.2-cp314-cp314t-manylinux_2_34_ppc64le.whl", hash = "sha256:84f964e537f916e2cc85199e5a88742e964939b575ac8598b3f9d6cc416cdaf1", size = 5285085, upload-time = "2026-09-30T14:44:30.704Z" },
-    { url = "https://files.pythonhosted.org/packages/6c/01/03263395f74d50b071e9e66daace3f8bef80493e5d410726f2ba8554736b/cryptography-50.0.2-cp314-cp314t-manylinux_2_34_x86_64.whl", hash = "sha256:828d49b0ff5a0e3975865571c5d91dbbdd0d38d8289b249a163e9425413a5e05", size = 4727268, upload-time = "2026-09-30T14:44:32.92Z" },
 ```
 
 **Line-by-line explanation**
 
+- **L65** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-macosx\_10\_15\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
+- **L66** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-macosx\_11\_0\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
+- **L67** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-manylinux2014\_aarch64.manylinux\_2\_17\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
+- **L68** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-manylinux2014\_ppc64le.manylinux\_2\_17\_ppc64le.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
+- **L69** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-manylinux2014\_s390x.manylinux\_2\_17\_s390x.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
+- **L70** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-manylinux2014\_x86\_64.manylinux\_2\_17\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
+- **L71** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-musllinux\_1\_2\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
+- **L72** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-musllinux\_1\_2\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
+- **L73** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-win32.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
+- **L74** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
+- **L75** — One prebuilt wheel choice: cffi-2.1.1-cp315-cp315t-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cffi and is data, not VPN logic.
+- **L76** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
 - **L78** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
 - **L79** — Name this locked distribution cryptography. Names identify packages to install; they are not necessarily identical to Python import names (for example pyside6 is imported as PySide6).
 - **L80** — Pin cryptography to this exact release version. A lock chooses one version within the declared constraints; it does not mean this is the newest release available.
@@ -8194,25 +8096,23 @@ wheels = [
 - **L94** — One prebuilt wheel choice: cryptography-50.0.2-cp311-abi3-manylinux\_2\_34\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
 - **L95** — One prebuilt wheel choice: cryptography-50.0.2-cp311-abi3-manylinux\_2\_34\_ppc64le.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
 - **L96** — One prebuilt wheel choice: cryptography-50.0.2-cp311-abi3-manylinux\_2\_34\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L97** — One prebuilt wheel choice: cryptography-50.0.2-cp311-abi3-musllinux\_1\_2\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L98** — One prebuilt wheel choice: cryptography-50.0.2-cp311-abi3-musllinux\_1\_2\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L99** — One prebuilt wheel choice: cryptography-50.0.2-cp311-abi3-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L100** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-macosx\_11\_0\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L101** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-manylinux2014\_aarch64.manylinux\_2\_17\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L102** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-manylinux2014\_x86\_64.manylinux\_2\_17\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L103** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-manylinux\_2\_28\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L104** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-manylinux\_2\_28\_ppc64le.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L105** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-manylinux\_2\_28\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L106** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-manylinux\_2\_31\_armv7l.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L107** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-manylinux\_2\_34\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L108** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-manylinux\_2\_34\_ppc64le.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L109** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-manylinux\_2\_34\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
 
-
-#### 13.29.6 L110–L140 · Locked package cryptography · section 2
-
+#### 13.29.4 L97–L128 · File contents
 
 ```toml
+    { url = "https://files.pythonhosted.org/packages/6c/5d/906970b83bbfc1f5bbfb677a143c181f2801f23b6a7204a3b47c42c97e65/cryptography-50.0.2-cp311-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:25784ce8b9621c90c643efb9e1e2162ab3b0224cae446ad5e70e7fcb1ce18b51", size = 4870819, upload-time = "2026-09-30T14:44:06.884Z" },
+    { url = "https://files.pythonhosted.org/packages/68/e3/f2298d3bb55e0c4a91841ec4d01b3f020ba8c5fbf15ccdcc6dcf03f97025/cryptography-50.0.2-cp311-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:85d0d9a31b9098e98534226d5686b47264b95e62ce459dc2e62fdfc809f9fe93", size = 5030152, upload-time = "2026-09-30T14:44:09.443Z" },
+    { url = "https://files.pythonhosted.org/packages/9a/4f/adfc442765721292fff86d314ce385d3249d22db42295c0dd057727b60f3/cryptography-50.0.2-cp311-abi3-win_amd64.whl", hash = "sha256:7afa5a6602a9f29af1f3a2965f831bae7c9d5d597b7cbb716d41ab3b7d89879c", size = 3824692, upload-time = "2026-09-30T14:44:11.671Z" },
+    { url = "https://files.pythonhosted.org/packages/ce/cb/52eb3770c0d0be2702a98c6e96065ddc0a2877cf0845aa9c23397c142cd4/cryptography-50.0.2-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:f785f6161f202ab04d8ca194158968798e480ca058943907972da5f12e2881e8", size = 3892731, upload-time = "2026-09-30T14:44:13.485Z" },
+    { url = "https://files.pythonhosted.org/packages/19/8e/aa1fc533d4546b127b45de8aa024eb5933d23eff9debfe25931e56861095/cryptography-50.0.2-cp314-cp314t-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:0ecbc5652bdb6fc9eaf89a7d196e20941adfe812f43bc4ca05d9150496821047", size = 4710431, upload-time = "2026-09-30T14:44:15.427Z" },
+    { url = "https://files.pythonhosted.org/packages/6a/64/72bc3f75176e7e406b748a3e3830432b8c51297b38368713df04dc04898a/cryptography-50.0.2-cp314-cp314t-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:ab50ee449bf968271e820086f10a33d101dd060370abc10bcd22279be2656539", size = 4694824, upload-time = "2026-09-30T14:44:17.69Z" },
+    { url = "https://files.pythonhosted.org/packages/4e/c6/62c77550edfa5ca3f14bf44a1e6739b9fa09d6e998a11d97ed8213bccc98/cryptography-50.0.2-cp314-cp314t-manylinux_2_28_aarch64.whl", hash = "sha256:a9f7355e6fab51f6c369b86fb7571cffa05edee2c2121e0380a37fb9ac1cd5c1", size = 4716967, upload-time = "2026-09-30T14:44:19.661Z" },
+    { url = "https://files.pythonhosted.org/packages/f4/37/cce70f150c432914460157a6ecc161752e053aa5ec0ef3b3f7dc6e31039a/cryptography-50.0.2-cp314-cp314t-manylinux_2_28_ppc64le.whl", hash = "sha256:94e5e9f108ee10471288214d3d233fbfbb492840a8457eb85178d643ddeb32c7", size = 5328676, upload-time = "2026-09-30T14:44:21.744Z" },
+    { url = "https://files.pythonhosted.org/packages/aa/9a/6f2f0304d634ceafdeaf23e84537336664ac419b5d07611675c2ad3f6b7a/cryptography-50.0.2-cp314-cp314t-manylinux_2_28_x86_64.whl", hash = "sha256:241449bf940a5d27309bd317e6f9a2af6932113818bb2b8f5c59ddc7ef16da18", size = 4727698, upload-time = "2026-09-30T14:44:24.178Z" },
+    { url = "https://files.pythonhosted.org/packages/1d/de/66bcf9244d118663b2e1aaded8990f4640e3d7b7411870a5765f252074d2/cryptography-50.0.2-cp314-cp314t-manylinux_2_31_armv7l.whl", hash = "sha256:d8947001be83df1394050758ce0e745dd74fb134eef0a4b5124208dfc3a68c37", size = 4354821, upload-time = "2026-09-30T14:44:26.263Z" },
+    { url = "https://files.pythonhosted.org/packages/bd/e6/db28a28c7b6c676addce89136de3d8db49ea825a8c863472e36e42ead4ad/cryptography-50.0.2-cp314-cp314t-manylinux_2_34_aarch64.whl", hash = "sha256:4a20ce1e5cb4284a86692fdcba7cb8754185c6b2e5c56fcef3751cf451d3cdc2", size = 4716748, upload-time = "2026-09-30T14:44:28.447Z" },
+    { url = "https://files.pythonhosted.org/packages/30/96/01546c7f69ea0e2ab790a2e4f0934a4052fb9b388147fbf83c2fd72f1e57/cryptography-50.0.2-cp314-cp314t-manylinux_2_34_ppc64le.whl", hash = "sha256:84f964e537f916e2cc85199e5a88742e964939b575ac8598b3f9d6cc416cdaf1", size = 5285085, upload-time = "2026-09-30T14:44:30.704Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/01/03263395f74d50b071e9e66daace3f8bef80493e5d410726f2ba8554736b/cryptography-50.0.2-cp314-cp314t-manylinux_2_34_x86_64.whl", hash = "sha256:828d49b0ff5a0e3975865571c5d91dbbdd0d38d8289b249a163e9425413a5e05", size = 4727268, upload-time = "2026-09-30T14:44:32.92Z" },
     { url = "https://files.pythonhosted.org/packages/eb/94/2bfe8f29ec0cc9c0d99359c4161adf32858e4934b72c6d100d2ac0bbe962/cryptography-50.0.2-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:deb9fde5c60e437ee4821bc9bc39ff31b42135c27e1dc61ef0a629389c1de62e", size = 4849503, upload-time = "2026-09-30T14:44:34.969Z" },
     { url = "https://files.pythonhosted.org/packages/54/44/e80651ecbf0e42b62e2bb5f5768916e07eea72e1297338956a61df361f88/cryptography-50.0.2-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:8c71ba2cd31fc93748c38e1b613200ff1c2665cbfd5341fe3a61cfde35a1430e", size = 5004057, upload-time = "2026-09-30T14:44:37.064Z" },
     { url = "https://files.pythonhosted.org/packages/f8/cc/1d33befb3cd7ea7e77d2d73f43f2066471da1b21f24a6156efcaabf6d2e8/cryptography-50.0.2-cp314-cp314t-win_amd64.whl", hash = "sha256:78198641e5be9521beea5aa782bb551a58068d10e6eb04c9c680c1b69f2e7d45", size = 3795868, upload-time = "2026-09-30T14:44:39.71Z" },
@@ -8232,21 +8132,23 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/23/ad/ac987755d00e1e64273760228d2635ae38dae2be83e3c6e0d3289d91dec3/cryptography-50.0.2-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:0ec5f09541743261e66e291b4a0cbf0fb2997aeaab6d9e9c740b9dba1b58d1c2", size = 3943588, upload-time = "2026-09-30T15:29:22.265Z" },
     { url = "https://files.pythonhosted.org/packages/d5/8d/6d585339bedf85d45044c85d8412dac53f2bb6f918e8b7777efba1787844/cryptography-50.0.2-cp39-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:c5e67125c7dca78d199ec4e116aa93dbb83494808ecbb8211a2cb09b1bf41dbd", size = 4756166, upload-time = "2026-09-30T15:29:24.58Z" },
     { url = "https://files.pythonhosted.org/packages/bf/f1/1c1f6874e8550cfddd4b688ceb38cefb6ed15ceed224d56f133f3d88c214/cryptography-50.0.2-cp39-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:ee247f5c245c9a2fe7c8e2214e295918838e44e00a45a6718451e4004219e767", size = 4749145, upload-time = "2026-09-30T15:29:26.807Z" },
-    { url = "https://files.pythonhosted.org/packages/c1/63/61b15dc1a8de03fe0adbe3fd7608b3ad5c73bf50993bbcb1faaa930afe33/cryptography-50.0.2-cp39-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:dfe9763530994147d9af1def057a5b9658b00e8f8fe8743d144d1e0911c2e454", size = 4763638, upload-time = "2026-09-30T15:29:28.588Z" },
-    { url = "https://files.pythonhosted.org/packages/fc/35/b345bdfa40c9126df1a9d33236aa98418367931b8725f84fc3ae2b98dc59/cryptography-50.0.2-cp39-abi3-manylinux_2_28_ppc64le.whl", hash = "sha256:58ddb5a8e3179d12f19e4ea34d2d32e9d63a4baa142c875c1eb59f41b7243acd", size = 5382217, upload-time = "2026-09-30T15:29:30.589Z" },
-    { url = "https://files.pythonhosted.org/packages/4f/87/ef344a9e616871f2519c22d6afcda79ddd5d35e9592d95eb6e677608d055/cryptography-50.0.2-cp39-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:f21e8a22c8605750c7af886bab299a363721264061b4ac0a30efb73cfd58efc5", size = 4781387, upload-time = "2026-09-30T15:29:32.605Z" },
-    { url = "https://files.pythonhosted.org/packages/90/5b/f2fdb13cd0b96f6f932c8627bb292a45f11c64d21620a8e120aee9a3b848/cryptography-50.0.2-cp39-abi3-manylinux_2_31_armv7l.whl", hash = "sha256:9c8402a82ea0dc4ceeab793db05f0fafa8ca139ca34fcde5df0f596103c74107", size = 4403790, upload-time = "2026-09-30T15:29:34.374Z" },
-    { url = "https://files.pythonhosted.org/packages/bc/ce/7e4f662b1e3c393513569e402cfc85ac7da0bd3d5435e122a3140219eb2d/cryptography-50.0.2-cp39-abi3-manylinux_2_34_aarch64.whl", hash = "sha256:0ddc924c04591c2811ca024d62ecad4f7f6f08af8939c211438f48a16bd23602", size = 4764319, upload-time = "2026-09-30T15:29:36.149Z" },
-    { url = "https://files.pythonhosted.org/packages/3c/3f/86ff33ce34cc0de6847fb96e035a1a760d81652e38643f617c02ad32ef7a/cryptography-50.0.2-cp39-abi3-manylinux_2_34_ppc64le.whl", hash = "sha256:a6557e5f38e065ca9fbdaf7cfc7435ecb1d113aa81a022d1b51921ee7432e227", size = 5338560, upload-time = "2026-09-30T15:29:39.053Z" },
-    { url = "https://files.pythonhosted.org/packages/40/cf/6b5c8e2fd9202d98988ab7cb5cc5c991704c4ad55f492ff408e4969f83f1/cryptography-50.0.2-cp39-abi3-manylinux_2_34_x86_64.whl", hash = "sha256:1981f1db4630889b9ef7803fadef12b056f428cb6b85c27ba57b774793b6093c", size = 4780973, upload-time = "2026-09-30T15:29:41.251Z" },
-    { url = "https://files.pythonhosted.org/packages/10/bf/8d6ebc7dded797bd0f0160d52188021211f011a2b164ef0ae1dac4587465/cryptography-50.0.2-cp39-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:7a8701d6b584d76e909e3d305b7d126b41439876a5aaf76cddc67fc230eafa2e", size = 4897738, upload-time = "2026-09-30T15:29:43.106Z" },
-    { url = "https://files.pythonhosted.org/packages/d4/aa/f3f6e0de7e6253b8baa8b2d8fb9d50924fa75cee3d4624bd4bc1208ee923/cryptography-50.0.2-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:ce47f66801c20ec6c6632453bb5960fe38939e9306970b48b3a5a26de7745d94", size = 5058280, upload-time = "2026-09-30T15:29:44.827Z" },
-    { url = "https://files.pythonhosted.org/packages/f6/b6/a1faf3a27ae9405fb34b1713cc73b2d8a26b04d5c561578fa2e6ef3e5bb9/cryptography-50.0.2-cp39-abi3-win_amd64.whl", hash = "sha256:4e81d95e5bafc2d6e34e4bed780e53e4d5b9a2f928573428aa4d35fbec1eb0de", size = 3854095, upload-time = "2026-09-30T15:29:46.782Z" },
-]
 ```
 
 **Line-by-line explanation**
 
+- **L97** — One prebuilt wheel choice: cryptography-50.0.2-cp311-abi3-musllinux\_1\_2\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L98** — One prebuilt wheel choice: cryptography-50.0.2-cp311-abi3-musllinux\_1\_2\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L99** — One prebuilt wheel choice: cryptography-50.0.2-cp311-abi3-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L100** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-macosx\_11\_0\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L101** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-manylinux2014\_aarch64.manylinux\_2\_17\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L102** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-manylinux2014\_x86\_64.manylinux\_2\_17\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L103** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-manylinux\_2\_28\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L104** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-manylinux\_2\_28\_ppc64le.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L105** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-manylinux\_2\_28\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L106** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-manylinux\_2\_31\_armv7l.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L107** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-manylinux\_2\_34\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L108** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-manylinux\_2\_34\_ppc64le.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L109** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-manylinux\_2\_34\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
 - **L110** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-musllinux\_1\_2\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
 - **L111** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-musllinux\_1\_2\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
 - **L112** — One prebuilt wheel choice: cryptography-50.0.2-cp314-cp314t-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
@@ -8266,23 +8168,22 @@ wheels = [
 - **L126** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-macosx\_11\_0\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
 - **L127** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-manylinux2014\_aarch64.manylinux\_2\_17\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
 - **L128** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-manylinux2014\_x86\_64.manylinux\_2\_17\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L129** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-manylinux\_2\_28\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L130** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-manylinux\_2\_28\_ppc64le.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L131** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-manylinux\_2\_28\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L132** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-manylinux\_2\_31\_armv7l.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L133** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-manylinux\_2\_34\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L134** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-manylinux\_2\_34\_ppc64le.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L135** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-manylinux\_2\_34\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L136** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-musllinux\_1\_2\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L137** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-musllinux\_1\_2\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L138** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
-- **L139** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
 
-
-#### 13.29.7 L141–L172 · Locked package numpy · section 1
-
+#### 13.29.5 L129–L160 · File contents
 
 ```toml
+    { url = "https://files.pythonhosted.org/packages/c1/63/61b15dc1a8de03fe0adbe3fd7608b3ad5c73bf50993bbcb1faaa930afe33/cryptography-50.0.2-cp39-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:dfe9763530994147d9af1def057a5b9658b00e8f8fe8743d144d1e0911c2e454", size = 4763638, upload-time = "2026-09-30T15:29:28.588Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/35/b345bdfa40c9126df1a9d33236aa98418367931b8725f84fc3ae2b98dc59/cryptography-50.0.2-cp39-abi3-manylinux_2_28_ppc64le.whl", hash = "sha256:58ddb5a8e3179d12f19e4ea34d2d32e9d63a4baa142c875c1eb59f41b7243acd", size = 5382217, upload-time = "2026-09-30T15:29:30.589Z" },
+    { url = "https://files.pythonhosted.org/packages/4f/87/ef344a9e616871f2519c22d6afcda79ddd5d35e9592d95eb6e677608d055/cryptography-50.0.2-cp39-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:f21e8a22c8605750c7af886bab299a363721264061b4ac0a30efb73cfd58efc5", size = 4781387, upload-time = "2026-09-30T15:29:32.605Z" },
+    { url = "https://files.pythonhosted.org/packages/90/5b/f2fdb13cd0b96f6f932c8627bb292a45f11c64d21620a8e120aee9a3b848/cryptography-50.0.2-cp39-abi3-manylinux_2_31_armv7l.whl", hash = "sha256:9c8402a82ea0dc4ceeab793db05f0fafa8ca139ca34fcde5df0f596103c74107", size = 4403790, upload-time = "2026-09-30T15:29:34.374Z" },
+    { url = "https://files.pythonhosted.org/packages/bc/ce/7e4f662b1e3c393513569e402cfc85ac7da0bd3d5435e122a3140219eb2d/cryptography-50.0.2-cp39-abi3-manylinux_2_34_aarch64.whl", hash = "sha256:0ddc924c04591c2811ca024d62ecad4f7f6f08af8939c211438f48a16bd23602", size = 4764319, upload-time = "2026-09-30T15:29:36.149Z" },
+    { url = "https://files.pythonhosted.org/packages/3c/3f/86ff33ce34cc0de6847fb96e035a1a760d81652e38643f617c02ad32ef7a/cryptography-50.0.2-cp39-abi3-manylinux_2_34_ppc64le.whl", hash = "sha256:a6557e5f38e065ca9fbdaf7cfc7435ecb1d113aa81a022d1b51921ee7432e227", size = 5338560, upload-time = "2026-09-30T15:29:39.053Z" },
+    { url = "https://files.pythonhosted.org/packages/40/cf/6b5c8e2fd9202d98988ab7cb5cc5c991704c4ad55f492ff408e4969f83f1/cryptography-50.0.2-cp39-abi3-manylinux_2_34_x86_64.whl", hash = "sha256:1981f1db4630889b9ef7803fadef12b056f428cb6b85c27ba57b774793b6093c", size = 4780973, upload-time = "2026-09-30T15:29:41.251Z" },
+    { url = "https://files.pythonhosted.org/packages/10/bf/8d6ebc7dded797bd0f0160d52188021211f011a2b164ef0ae1dac4587465/cryptography-50.0.2-cp39-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:7a8701d6b584d76e909e3d305b7d126b41439876a5aaf76cddc67fc230eafa2e", size = 4897738, upload-time = "2026-09-30T15:29:43.106Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/aa/f3f6e0de7e6253b8baa8b2d8fb9d50924fa75cee3d4624bd4bc1208ee923/cryptography-50.0.2-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:ce47f66801c20ec6c6632453bb5960fe38939e9306970b48b3a5a26de7745d94", size = 5058280, upload-time = "2026-09-30T15:29:44.827Z" },
+    { url = "https://files.pythonhosted.org/packages/f6/b6/a1faf3a27ae9405fb34b1713cc73b2d8a26b04d5c561578fa2e6ef3e5bb9/cryptography-50.0.2-cp39-abi3-win_amd64.whl", hash = "sha256:4e81d95e5bafc2d6e34e4bed780e53e4d5b9a2f928573428aa4d35fbec1eb0de", size = 3854095, upload-time = "2026-09-30T15:29:46.782Z" },
+]
+
 [[package]]
 name = "numpy"
 version = "2.5.4"
@@ -8303,22 +8204,21 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/99/ba/005cb5edd580d2f84d7ca3206b92dc17d4388e56e6f87ffe8f2762f83139/numpy-2.5.4-cp314-cp314-macosx_10_15_x86_64.whl", hash = "sha256:c668b2f0d651605b58892644b0e302c7157f7159544227758c896982ef384b18", size = 17005499, upload-time = "2026-10-10T20:03:37.961Z" },
     { url = "https://files.pythonhosted.org/packages/f3/49/fee7587c33ee35f7977f9051d7f2023d4e7246d62710c80f20c2361ea232/numpy-2.5.4-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:ffa6ce09a1c6a08e9667dd9c97aa0b14184e8d18f2a14b78b2a2328c9147f076", size = 12019666, upload-time = "2026-10-10T20:03:40.606Z" },
     { url = "https://files.pythonhosted.org/packages/d5/b2/c6ce165acffceb15a82c07b9cc77d391f86b3f379ba62911908ae5d34b91/numpy-2.5.4-cp314-cp314-macosx_14_0_arm64.whl", hash = "sha256:956555e0603a4d38019ae6925711cb9dc43195c076a928accf7ea5d50bddfe53", size = 5455617, upload-time = "2026-10-10T20:03:43.138Z" },
-    { url = "https://files.pythonhosted.org/packages/77/7f/dd85ce260a669a89be06842cf355d7353a33e6cfbc590fb8ebb947d88dc9/numpy-2.5.4-cp314-cp314-macosx_14_0_x86_64.whl", hash = "sha256:2c2c4afffdeb7920e445028dd71eb932cac3e704792e964bc2a232426d4f1255", size = 6791932, upload-time = "2026-10-10T20:03:44.874Z" },
-    { url = "https://files.pythonhosted.org/packages/63/d6/34b0a2b0741386a63025a65a2c09caaaaaad6d0ca95b66cd65c30dd7fcb5/numpy-2.5.4-cp314-cp314-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:4054173604cd8658796053f1f3bc0befb68ec1c0762c57fdad61e199256a8617", size = 15710899, upload-time = "2026-10-10T20:03:46.839Z" },
-    { url = "https://files.pythonhosted.org/packages/16/d5/928078d2b28f26829b138b4a6c3980045022fb409f570657a224ae60ef4e/numpy-2.5.4-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:d549420b8858885cea8838a727842249218b9c1da24dd517e25c9c7a948310a3", size = 16721710, upload-time = "2026-10-10T20:03:49.489Z" },
-    { url = "https://files.pythonhosted.org/packages/f9/cf/673fd1b8f4cd78eb6320e87ec4c90ac19c095644259e3749853a405c70f4/numpy-2.5.4-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:823874a507a84af050493b622affde94b6f7c3a0dc22cb2801381bc03b871c00", size = 17066182, upload-time = "2026-10-10T20:03:52.25Z" },
-    { url = "https://files.pythonhosted.org/packages/f3/92/a77b5061b1b3e2643928c37976d79ee173e1b171ed158b7a3c61056b41bc/numpy-2.5.4-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:4e263278bfb5ee6409db8aedbc4cc32973b1b82bc1e8d3c668551d04d83a7e37", size = 18480315, upload-time = "2026-10-10T20:03:55.39Z" },
-    { url = "https://files.pythonhosted.org/packages/bb/1d/1486ef3d3fb2279fd93c4c43c1bbbf1ca389a19816696684409f71babaab/numpy-2.5.4-cp314-cp314-win32.whl", hash = "sha256:cfd73180400042a7c532d30c5e287bdd03c59ff9ee1b4c0316af0539e29dfe23", size = 6185739, upload-time = "2026-10-10T20:03:58.186Z" },
-    { url = "https://files.pythonhosted.org/packages/52/9a/e1e512ebc948d5b9dd33b08736760f0ebbed2848fd4eda1f553088a6dcee/numpy-2.5.4-cp314-cp314-win_amd64.whl", hash = "sha256:2ca144f15135b6212a5c47b1e2aeca6e412f102f95a2d5d88d8aec77eb255de3", size = 12703552, upload-time = "2026-10-10T20:04:00.28Z" },
-    { url = "https://files.pythonhosted.org/packages/2c/05/de709a982d7bbcd688a3fad71f002e9ff80c2db39e03ee726609b610f1d1/numpy-2.5.4-cp314-cp314-win_arm64.whl", hash = "sha256:468397ba3c64427474706e5c9123fe266395496714dc684294eac75cd4930d1e", size = 10803901, upload-time = "2026-10-10T20:04:02.659Z" },
-    { url = "https://files.pythonhosted.org/packages/13/34/083570ada3bb2a30fbe5d77c8c6fef9141144a15d33e6f793a67e9749ab8/numpy-2.5.4-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:1ef3aa6d7e29bb13677323114280b05acc57607fa2300e66432d665d5418a162", size = 12138695, upload-time = "2026-10-10T20:04:05.012Z" },
-    { url = "https://files.pythonhosted.org/packages/94/06/1f9c24db48eef0c2d1207e3b11fffb0478e39dfd8c1e1be7476936885eed/numpy-2.5.4-cp314-cp314t-macosx_14_0_arm64.whl", hash = "sha256:98b053943e5a0474ec0da309d2cb9d3f18ea57f8a2067c2ab7b5f763d1068380", size = 5574615, upload-time = "2026-10-10T20:04:07.316Z" },
-    { url = "https://files.pythonhosted.org/packages/da/0f/593fba2e1560e949123bc7d2fc48b5893d56e58cd4bd5a273d2fbf60b220/numpy-2.5.4-cp314-cp314t-macosx_14_0_x86_64.whl", hash = "sha256:b64a85f40e154983960a4167d4c1d57a50c7f109b3d3264a3a984154e90a8454", size = 6889383, upload-time = "2026-10-10T20:04:09.918Z" },
-    { url = "https://files.pythonhosted.org/packages/eb/9f/b799dfdce4e05e80ed4bc815c71ff343a11533b2c0ffc221cae8538cda63/numpy-2.5.4-cp314-cp314t-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:a813ed7719bf45463c51779e6a98d0385fe905e48447526938a4b8337333d551", size = 15753763, upload-time = "2026-10-10T20:04:12.278Z" },
 ```
 
 **Line-by-line explanation**
 
+- **L129** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-manylinux\_2\_28\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L130** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-manylinux\_2\_28\_ppc64le.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L131** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-manylinux\_2\_28\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L132** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-manylinux\_2\_31\_armv7l.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L133** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-manylinux\_2\_34\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L134** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-manylinux\_2\_34\_ppc64le.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L135** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-manylinux\_2\_34\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L136** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-musllinux\_1\_2\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L137** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-musllinux\_1\_2\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L138** — One prebuilt wheel choice: cryptography-50.0.2-cp39-abi3-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to cryptography and is data, not VPN logic.
+- **L139** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
 - **L141** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
 - **L142** — Name this locked distribution numpy. Names identify packages to install; they are not necessarily identical to Python import names (for example pyside6 is imported as PySide6).
 - **L143** — Pin numpy to this exact release version. A lock chooses one version within the declared constraints; it does not mean this is the newest release available.
@@ -8339,24 +8239,22 @@ wheels = [
 - **L158** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314-macosx\_10\_15\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
 - **L159** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314-macosx\_11\_0\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
 - **L160** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314-macosx\_14\_0\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
-- **L161** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314-macosx\_14\_0\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
-- **L162** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314-manylinux\_2\_27\_aarch64.manylinux\_2\_28\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
-- **L163** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314-manylinux\_2\_27\_x86\_64.manylinux\_2\_28\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
-- **L164** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314-musllinux\_1\_2\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
-- **L165** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314-musllinux\_1\_2\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
-- **L166** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314-win32.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
-- **L167** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
-- **L168** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
-- **L169** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314t-macosx\_11\_0\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
-- **L170** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314t-macosx\_14\_0\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
-- **L171** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314t-macosx\_14\_0\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
-- **L172** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314t-manylinux\_2\_27\_aarch64.manylinux\_2\_28\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
 
-
-#### 13.29.8 L173–L202 · Locked package numpy · section 2
-
+#### 13.29.6 L161–L192 · File contents
 
 ```toml
+    { url = "https://files.pythonhosted.org/packages/77/7f/dd85ce260a669a89be06842cf355d7353a33e6cfbc590fb8ebb947d88dc9/numpy-2.5.4-cp314-cp314-macosx_14_0_x86_64.whl", hash = "sha256:2c2c4afffdeb7920e445028dd71eb932cac3e704792e964bc2a232426d4f1255", size = 6791932, upload-time = "2026-10-10T20:03:44.874Z" },
+    { url = "https://files.pythonhosted.org/packages/63/d6/34b0a2b0741386a63025a65a2c09caaaaaad6d0ca95b66cd65c30dd7fcb5/numpy-2.5.4-cp314-cp314-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:4054173604cd8658796053f1f3bc0befb68ec1c0762c57fdad61e199256a8617", size = 15710899, upload-time = "2026-10-10T20:03:46.839Z" },
+    { url = "https://files.pythonhosted.org/packages/16/d5/928078d2b28f26829b138b4a6c3980045022fb409f570657a224ae60ef4e/numpy-2.5.4-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:d549420b8858885cea8838a727842249218b9c1da24dd517e25c9c7a948310a3", size = 16721710, upload-time = "2026-10-10T20:03:49.489Z" },
+    { url = "https://files.pythonhosted.org/packages/f9/cf/673fd1b8f4cd78eb6320e87ec4c90ac19c095644259e3749853a405c70f4/numpy-2.5.4-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:823874a507a84af050493b622affde94b6f7c3a0dc22cb2801381bc03b871c00", size = 17066182, upload-time = "2026-10-10T20:03:52.25Z" },
+    { url = "https://files.pythonhosted.org/packages/f3/92/a77b5061b1b3e2643928c37976d79ee173e1b171ed158b7a3c61056b41bc/numpy-2.5.4-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:4e263278bfb5ee6409db8aedbc4cc32973b1b82bc1e8d3c668551d04d83a7e37", size = 18480315, upload-time = "2026-10-10T20:03:55.39Z" },
+    { url = "https://files.pythonhosted.org/packages/bb/1d/1486ef3d3fb2279fd93c4c43c1bbbf1ca389a19816696684409f71babaab/numpy-2.5.4-cp314-cp314-win32.whl", hash = "sha256:cfd73180400042a7c532d30c5e287bdd03c59ff9ee1b4c0316af0539e29dfe23", size = 6185739, upload-time = "2026-10-10T20:03:58.186Z" },
+    { url = "https://files.pythonhosted.org/packages/52/9a/e1e512ebc948d5b9dd33b08736760f0ebbed2848fd4eda1f553088a6dcee/numpy-2.5.4-cp314-cp314-win_amd64.whl", hash = "sha256:2ca144f15135b6212a5c47b1e2aeca6e412f102f95a2d5d88d8aec77eb255de3", size = 12703552, upload-time = "2026-10-10T20:04:00.28Z" },
+    { url = "https://files.pythonhosted.org/packages/2c/05/de709a982d7bbcd688a3fad71f002e9ff80c2db39e03ee726609b610f1d1/numpy-2.5.4-cp314-cp314-win_arm64.whl", hash = "sha256:468397ba3c64427474706e5c9123fe266395496714dc684294eac75cd4930d1e", size = 10803901, upload-time = "2026-10-10T20:04:02.659Z" },
+    { url = "https://files.pythonhosted.org/packages/13/34/083570ada3bb2a30fbe5d77c8c6fef9141144a15d33e6f793a67e9749ab8/numpy-2.5.4-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:1ef3aa6d7e29bb13677323114280b05acc57607fa2300e66432d665d5418a162", size = 12138695, upload-time = "2026-10-10T20:04:05.012Z" },
+    { url = "https://files.pythonhosted.org/packages/94/06/1f9c24db48eef0c2d1207e3b11fffb0478e39dfd8c1e1be7476936885eed/numpy-2.5.4-cp314-cp314t-macosx_14_0_arm64.whl", hash = "sha256:98b053943e5a0474ec0da309d2cb9d3f18ea57f8a2067c2ab7b5f763d1068380", size = 5574615, upload-time = "2026-10-10T20:04:07.316Z" },
+    { url = "https://files.pythonhosted.org/packages/da/0f/593fba2e1560e949123bc7d2fc48b5893d56e58cd4bd5a273d2fbf60b220/numpy-2.5.4-cp314-cp314t-macosx_14_0_x86_64.whl", hash = "sha256:b64a85f40e154983960a4167d4c1d57a50c7f109b3d3264a3a984154e90a8454", size = 6889383, upload-time = "2026-10-10T20:04:09.918Z" },
+    { url = "https://files.pythonhosted.org/packages/eb/9f/b799dfdce4e05e80ed4bc815c71ff343a11533b2c0ffc221cae8538cda63/numpy-2.5.4-cp314-cp314t-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:a813ed7719bf45463c51779e6a98d0385fe905e48447526938a4b8337333d551", size = 15753763, upload-time = "2026-10-10T20:04:12.278Z" },
     { url = "https://files.pythonhosted.org/packages/34/88/16c5f12f86f5ad2817c4d103205131fc6c8acb3d1878af05a1a4f23ec859/numpy-2.5.4-cp314-cp314t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:c9b80cdf5cedba0e90d93fa5f9a333c4d65bd545cd669b71bb97ce2b703c9d73", size = 16757212, upload-time = "2026-10-10T20:04:14.799Z" },
     { url = "https://files.pythonhosted.org/packages/ff/4f/a1fe40e18a898e6a5089f4f0d891f0a493eb0574d5b34458f0fbe5aa3e5c/numpy-2.5.4-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:2199ed071f460487c8db2c0e5c0b564494190edb4772fe80f9aad88b2604def5", size = 17116471, upload-time = "2026-10-10T20:04:17.58Z" },
     { url = "https://files.pythonhosted.org/packages/aa/46/e923a11c78e65c1722e7aaad817c06bd591324174b9d28ce5d31eee4d432/numpy-2.5.4-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:64f9c9878c1938476365e11ccfb6b770f3b9e5f045ccddc514235041e6959365", size = 18524063, upload-time = "2026-10-10T20:04:20.365Z" },
@@ -8377,19 +8275,22 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/c6/c3/2ae14e09cfdb67dc187a342e15308a21c15bf4d2071f8079e6aee5fe56dc/numpy-2.5.4-cp315-cp315t-macosx_10_15_x86_64.whl", hash = "sha256:950ea81d57ef070665581b6e1b5f6a029306423cd1739c5b95fe78aa30db6b9d", size = 17097121, upload-time = "2026-10-10T20:04:58.403Z" },
     { url = "https://files.pythonhosted.org/packages/f5/cf/305ae624ef8a039414317224abe9ec9c2fe7ea3c2e1cf204d43ff6b2ffb9/numpy-2.5.4-cp315-cp315t-macosx_11_0_arm64.whl", hash = "sha256:c05ede731b03fb1b7591faca9389ade3267d2bddf1ad8882bb3f2cc5e101694f", size = 12135439, upload-time = "2026-10-10T20:05:01.65Z" },
     { url = "https://files.pythonhosted.org/packages/a9/a8/f75c63813aef95827bb2c0d13b12803016853056e8792c280058cdbfe783/numpy-2.5.4-cp315-cp315t-macosx_14_0_arm64.whl", hash = "sha256:5fbf7141bbfd63aea22f435c9062a032b9ea0082fe9845dad7f021d3f1234e71", size = 5571451, upload-time = "2026-10-10T20:05:04.135Z" },
-    { url = "https://files.pythonhosted.org/packages/6f/0f/f17763f983868b5c49b4101ebd7e00760bd1769478a6bb6a8de6e085bbac/numpy-2.5.4-cp315-cp315t-macosx_14_0_x86_64.whl", hash = "sha256:3573cd22564692a5b899ec344e5d5b9cc4576f2985b96f22af3564ed54f2710f", size = 6883356, upload-time = "2026-10-10T20:05:06.249Z" },
-    { url = "https://files.pythonhosted.org/packages/67/a7/8af04c5a79e047996cfa38854dcfbececdd0343a7c933a46fdd03ef6f5da/numpy-2.5.4-cp315-cp315t-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:6c109eac9cd439193678f69d70733c1108487546ca8eafc107b510ae10c1aecd", size = 15750991, upload-time = "2026-10-10T20:05:08.376Z" },
-    { url = "https://files.pythonhosted.org/packages/57/7a/648254290d0c504faa8f2d07aa206660c728802c781a6f3fc68ab7cb5d71/numpy-2.5.4-cp315-cp315t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:80d6ef6e8620eb2c2b4c4caad50b5935d6db3cde2d51581b55dcc79e14016d1d", size = 16757675, upload-time = "2026-10-10T20:05:11.393Z" },
-    { url = "https://files.pythonhosted.org/packages/b8/fe/4a8c3cdb0c70400cfe4c5bec42d3099a5673802a95064614b33e07b82aa1/numpy-2.5.4-cp315-cp315t-musllinux_1_2_aarch64.whl", hash = "sha256:77045a4b175bbf5316ec08003880804336c78f92281a1b72222b274ea85ec5ac", size = 17113846, upload-time = "2026-10-10T20:05:14.49Z" },
-    { url = "https://files.pythonhosted.org/packages/1b/7e/619692bb67778702c0e9eb2d468568a7573f4e269386ea61aed01ee4e557/numpy-2.5.4-cp315-cp315t-musllinux_1_2_x86_64.whl", hash = "sha256:0f02a46e49cfb6c73bdb7aea1c0d3461dbae9aba613542b65f657cd3d17b9fab", size = 18522915, upload-time = "2026-10-10T20:05:17.33Z" },
-    { url = "https://files.pythonhosted.org/packages/b7/b5/4da41c328788f575838f97a098fe8ca691ebc6f6fd73ad4a262ee40b184d/numpy-2.5.4-cp315-cp315t-win32.whl", hash = "sha256:ad62a416ddcf863bf44bba76fbf6b53366ab0692e294f51cae4b5fbe0d246788", size = 6335804, upload-time = "2026-10-10T20:05:19.921Z" },
-    { url = "https://files.pythonhosted.org/packages/98/94/6482ddfa3d312490cb9358f375bf2ad56427dbea8769187158e94d653753/numpy-2.5.4-cp315-cp315t-win_amd64.whl", hash = "sha256:38f47be9f74ab870d2633b5456ae519c43758a8d1fd05342f0ce4ecc034396ee", size = 12890095, upload-time = "2026-10-10T20:05:21.875Z" },
-    { url = "https://files.pythonhosted.org/packages/48/7f/c2d1b436b6e7cfebac140c2579a298344b85f2991a2ce5c3615cefb29400/numpy-2.5.4-cp315-cp315t-win_arm64.whl", hash = "sha256:7a14a461d9340f1b46b8648578aed9cdb8b3b018a8fac6c1dde2c9192a01a87f", size = 10883718, upload-time = "2026-10-10T20:05:28.547Z" },
-]
 ```
 
 **Line-by-line explanation**
 
+- **L161** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314-macosx\_14\_0\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
+- **L162** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314-manylinux\_2\_27\_aarch64.manylinux\_2\_28\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
+- **L163** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314-manylinux\_2\_27\_x86\_64.manylinux\_2\_28\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
+- **L164** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314-musllinux\_1\_2\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
+- **L165** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314-musllinux\_1\_2\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
+- **L166** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314-win32.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
+- **L167** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
+- **L168** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
+- **L169** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314t-macosx\_11\_0\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
+- **L170** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314t-macosx\_14\_0\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
+- **L171** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314t-macosx\_14\_0\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
+- **L172** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314t-manylinux\_2\_27\_aarch64.manylinux\_2\_28\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
 - **L173** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314t-manylinux\_2\_27\_x86\_64.manylinux\_2\_28\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
 - **L174** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314t-musllinux\_1\_2\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
 - **L175** — One prebuilt wheel choice: numpy-2.5.4-cp314-cp314t-musllinux\_1\_2\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
@@ -8410,6 +8311,46 @@ wheels = [
 - **L190** — One prebuilt wheel choice: numpy-2.5.4-cp315-cp315t-macosx\_10\_15\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
 - **L191** — One prebuilt wheel choice: numpy-2.5.4-cp315-cp315t-macosx\_11\_0\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
 - **L192** — One prebuilt wheel choice: numpy-2.5.4-cp315-cp315t-macosx\_14\_0\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
+
+#### 13.29.7 L193–L224 · File contents
+
+```toml
+    { url = "https://files.pythonhosted.org/packages/6f/0f/f17763f983868b5c49b4101ebd7e00760bd1769478a6bb6a8de6e085bbac/numpy-2.5.4-cp315-cp315t-macosx_14_0_x86_64.whl", hash = "sha256:3573cd22564692a5b899ec344e5d5b9cc4576f2985b96f22af3564ed54f2710f", size = 6883356, upload-time = "2026-10-10T20:05:06.249Z" },
+    { url = "https://files.pythonhosted.org/packages/67/a7/8af04c5a79e047996cfa38854dcfbececdd0343a7c933a46fdd03ef6f5da/numpy-2.5.4-cp315-cp315t-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:6c109eac9cd439193678f69d70733c1108487546ca8eafc107b510ae10c1aecd", size = 15750991, upload-time = "2026-10-10T20:05:08.376Z" },
+    { url = "https://files.pythonhosted.org/packages/57/7a/648254290d0c504faa8f2d07aa206660c728802c781a6f3fc68ab7cb5d71/numpy-2.5.4-cp315-cp315t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:80d6ef6e8620eb2c2b4c4caad50b5935d6db3cde2d51581b55dcc79e14016d1d", size = 16757675, upload-time = "2026-10-10T20:05:11.393Z" },
+    { url = "https://files.pythonhosted.org/packages/b8/fe/4a8c3cdb0c70400cfe4c5bec42d3099a5673802a95064614b33e07b82aa1/numpy-2.5.4-cp315-cp315t-musllinux_1_2_aarch64.whl", hash = "sha256:77045a4b175bbf5316ec08003880804336c78f92281a1b72222b274ea85ec5ac", size = 17113846, upload-time = "2026-10-10T20:05:14.49Z" },
+    { url = "https://files.pythonhosted.org/packages/1b/7e/619692bb67778702c0e9eb2d468568a7573f4e269386ea61aed01ee4e557/numpy-2.5.4-cp315-cp315t-musllinux_1_2_x86_64.whl", hash = "sha256:0f02a46e49cfb6c73bdb7aea1c0d3461dbae9aba613542b65f657cd3d17b9fab", size = 18522915, upload-time = "2026-10-10T20:05:17.33Z" },
+    { url = "https://files.pythonhosted.org/packages/b7/b5/4da41c328788f575838f97a098fe8ca691ebc6f6fd73ad4a262ee40b184d/numpy-2.5.4-cp315-cp315t-win32.whl", hash = "sha256:ad62a416ddcf863bf44bba76fbf6b53366ab0692e294f51cae4b5fbe0d246788", size = 6335804, upload-time = "2026-10-10T20:05:19.921Z" },
+    { url = "https://files.pythonhosted.org/packages/98/94/6482ddfa3d312490cb9358f375bf2ad56427dbea8769187158e94d653753/numpy-2.5.4-cp315-cp315t-win_amd64.whl", hash = "sha256:38f47be9f74ab870d2633b5456ae519c43758a8d1fd05342f0ce4ecc034396ee", size = 12890095, upload-time = "2026-10-10T20:05:21.875Z" },
+    { url = "https://files.pythonhosted.org/packages/48/7f/c2d1b436b6e7cfebac140c2579a298344b85f2991a2ce5c3615cefb29400/numpy-2.5.4-cp315-cp315t-win_arm64.whl", hash = "sha256:7a14a461d9340f1b46b8648578aed9cdb8b3b018a8fac6c1dde2c9192a01a87f", size = 10883718, upload-time = "2026-10-10T20:05:28.547Z" },
+]
+
+[[package]]
+name = "pycairo"
+version = "1.29.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/bb/5e/19ab2572981a996ce96b853a189d2dcced40506b67d9555a7568457abcf2/pycairo-1.29.2.tar.gz", hash = "sha256:3e69fff74fe64f5ba2dfa31f67c6bdf26413342574047437d2ac520d35e9a489", size = 666308, upload-time = "2026-10-04T19:11:03.81Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/03/e9/03a625a9da4f0f0f5cb9420b7e6419478363d27c91888d82717d38a224d2/pycairo-1.29.2-cp313-cp313-win32.whl", hash = "sha256:50c30f88fa12b722ac8f997b67f83f5ea8fad06bc1d6c33dbdab504eb9978e56", size = 751443, upload-time = "2026-10-04T19:11:35.895Z" },
+    { url = "https://files.pythonhosted.org/packages/23/44/7f39568959f5b2997bb888728423aeab00617cf8844f8126ec9ddeee86c2/pycairo-1.29.2-cp313-cp313-win_amd64.whl", hash = "sha256:0b87aa05a50a2c8cf2489dffc1b12f88b6e2fe384075f8c799367625081ca3cd", size = 845293, upload-time = "2026-10-04T19:11:37.541Z" },
+    { url = "https://files.pythonhosted.org/packages/8f/90/83ebe0ae1d66378306085c505e7bf7abd0060714695e303877c800ff6d5c/pycairo-1.29.2-cp313-cp313-win_arm64.whl", hash = "sha256:806cd0f1266776fb6e881ce322569f0439993d66df0eeb8a255b1316f947acd0", size = 694636, upload-time = "2026-10-04T19:11:39.185Z" },
+    { url = "https://files.pythonhosted.org/packages/53/d4/48e4b327563beae41c5eabea70c4b8b9aec790361dec02c338d4e8e2ac21/pycairo-1.29.2-cp314-cp314-win32.whl", hash = "sha256:98360270afaa909bcc1769f299160123322da29d2a7310763b0ddc16e624d5c6", size = 767785, upload-time = "2026-10-04T19:11:43.794Z" },
+    { url = "https://files.pythonhosted.org/packages/42/bf/9d9eb2d0780440b1b5fe916e6a3abfa11e05f750b0ad643987cb9c0761d2/pycairo-1.29.2-cp314-cp314-win_amd64.whl", hash = "sha256:786373ba1bd78fbdec02cb1c99254eef12438bf942dd13534fe61b948becb527", size = 872750, upload-time = "2026-10-04T19:11:45.545Z" },
+    { url = "https://files.pythonhosted.org/packages/78/36/f785d5a974809f36247ee56d15ca135433d1bf3c2adf1eb8fd66150b6a5e/pycairo-1.29.2-cp314-cp314-win_arm64.whl", hash = "sha256:9bb09bca782b5e21a4beb698075b5504f234af0597920f0c0439979226a76182", size = 720245, upload-time = "2026-10-04T19:11:47.69Z" },
+    { url = "https://files.pythonhosted.org/packages/4f/74/c751bab17d770a3092d79b111281a7dca420b1490dd6e6f5408faab884ee/pycairo-1.29.2-cp314-cp314t-win_amd64.whl", hash = "sha256:bc9e26b7e9577d3655509766275653aa945f101fb28c197496facf8c9ba90321", size = 875205, upload-time = "2026-10-04T19:11:40.692Z" },
+    { url = "https://files.pythonhosted.org/packages/b8/61/2d6f8361ba8497bb23bbb8ec8b91959b2e71366a3af2830c5a758663eabd/pycairo-1.29.2-cp314-cp314t-win_arm64.whl", hash = "sha256:29e3389c0b6d3dafda1b2360a8938790c2c7b6971b78e109a565c1cb91f8ae9a", size = 721982, upload-time = "2026-10-04T19:11:42.146Z" },
+    { url = "https://files.pythonhosted.org/packages/92/05/427798a6722ee60ff9e1dbde0d6b67d56bdf4362c48c3239cf790804359e/pycairo-1.29.2-cp315-cp315-win_amd64.whl", hash = "sha256:c5dfa99afdde95b82325f240d144008a6b5be99405e74070540a1b7a857eb2a7", size = 872704, upload-time = "2026-10-04T19:11:53.589Z" },
+    { url = "https://files.pythonhosted.org/packages/5e/58/708d622971b11215d113a27b8a3ca21815383ff2441eac8922b03a22aa0a/pycairo-1.29.2-cp315-cp315-win_arm64.whl", hash = "sha256:6b0410280b82bf60a84185392f720c099d71524dd7983f93d9abe18c8b2cd3a6", size = 720251, upload-time = "2026-10-04T19:11:55.606Z" },
+    { url = "https://files.pythonhosted.org/packages/a9/db/fb0d756cc1966a3e5f3c903f14136690d567983a571d1864e6e7ca1f8c21/pycairo-1.29.2-cp315-cp315t-win_amd64.whl", hash = "sha256:88cbf5632be0b9255822b457d3bfe4f9eb0bc24e5520f54b6c4334e4f5b0f5aa", size = 875248, upload-time = "2026-10-04T19:11:50.36Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/ec/3c2700abac22e3ea70c67cb27caa6c2960372ebb7361127328471a39fa7f/pycairo-1.29.2-cp315-cp315t-win_arm64.whl", hash = "sha256:0e49de5b93fc1e76e670f368b9bd0ffc881c72f506e4293c4b4d79f52cbe4c47", size = 721983, upload-time = "2026-10-04T19:11:51.895Z" },
+]
+
+[[package]]
+name = "pycparser"
+```
+
+**Line-by-line explanation**
+
 - **L193** — One prebuilt wheel choice: numpy-2.5.4-cp315-cp315t-macosx\_14\_0\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
 - **L194** — One prebuilt wheel choice: numpy-2.5.4-cp315-cp315t-manylinux\_2\_27\_aarch64.manylinux\_2\_28\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
 - **L195** — One prebuilt wheel choice: numpy-2.5.4-cp315-cp315t-manylinux\_2\_27\_x86\_64.manylinux\_2\_28\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
@@ -8419,38 +8360,36 @@ wheels = [
 - **L199** — One prebuilt wheel choice: numpy-2.5.4-cp315-cp315t-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
 - **L200** — One prebuilt wheel choice: numpy-2.5.4-cp315-cp315t-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to numpy and is data, not VPN logic.
 - **L201** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
+- **L203** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
+- **L204** — Identify the new Pycairo package record.
+- **L205** — Lock Pycairo to 1.29.2 for this snapshot.
+- **L206** — Record the package registry from which cffi is resolved. The https://pypi.org/simple address is package-index metadata, not the TIFR VPN server.
+- **L207** — Record the source archive for pycairo, its download location, integrity hash, size and publication metadata. uv may build this archive locally when there is no suitable wheel.
+- **L208** — Begin the list of prebuilt wheel artifacts available for cffi across supported Python/platform combinations. The installer selects an applicable artifact; it does not install every wheel listed.
+- **L209–L220** — Record one prebuilt pycairo wheel with its platform/Python compatibility in the filename and its integrity metadata. A wheel listed for another OS is not automatically suitable for this Linux environment.
+- **L221** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
+- **L223** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
+- **L224** — Name this locked distribution pycparser. Names identify packages to install; they are not necessarily identical to Python import names (for example pyside6 is imported as PySide6).
 
-
-#### 13.29.9 L203–L211 · Locked package pycparser
-
+#### 13.29.8 L225–L256 · File contents
 
 ```toml
-[[package]]
-name = "pycparser"
 version = "3.12"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/cb/27/eeb9f307bf07060f3d9f9aa0fb8c15b01bdfded0a941e4b2719c7f94cacd/pycparser-3.12.tar.gz", hash = "sha256:f03387877eab82ce01bbdfd0ba7252ee55a90b1c708d5129e2ce915475cf1db6", size = 158785, upload-time = "2026-10-22T13:40:03.56Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b6/ae/315bbeee126a769cbde43cf4908acb4b40408d8bf8bbf334dd7368d8dadf/pycparser-3.12-py3-none-any.whl", hash = "sha256:a076f3f489b39b43ed13563a1dafe42447445bec2e294154ec5c57fcdda4c85e", size = 62600, upload-time = "2026-10-22T13:40:02.021Z" },
 ]
-```
 
-**Line-by-line explanation**
+[[package]]
+name = "pygobject"
+version = "3.58.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pycairo" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/65/1e/d590f82e14db75945b03f6b63e0f19662e0340babd8f574fdb1bb5a015e2/pygobject-3.58.1.tar.gz", hash = "sha256:4c80598ade17fbaa7798e01a25d0bf29ce109740786026a074c5c62bb3e79d23", size = 1408671, upload-time = "2026-10-09T11:29:48.929Z" }
 
-- **L203** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
-- **L204** — Name this locked distribution pycparser. Names identify packages to install; they are not necessarily identical to Python import names (for example pyside6 is imported as PySide6).
-- **L205** — Pin pycparser to this exact release version. A lock chooses one version within the declared constraints; it does not mean this is the newest release available.
-- **L206** — Record the package registry from which pycparser is resolved. The https://pypi.org/simple address is package-index metadata, not the TIFR VPN server.
-- **L207** — Record the source archive for pycparser: URL gives its location, hash gives the expected SHA-256 bytes fingerprint, size is the archive size in bytes, and upload-time is registry metadata. A source archive may need building if used; this record does not itself download it.
-- **L208** — Begin the list of prebuilt wheel artifacts available for pycparser across supported Python/platform combinations. The installer selects an applicable artifact; it does not install every wheel listed.
-- **L209** — One prebuilt wheel choice: pycparser-3.12-py3-none-any.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pycparser and is data, not VPN logic.
-- **L210** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
-
-
-#### 13.29.10 L212–L229 · Locked package pyside6
-
-
-```toml
 [[package]]
 name = "pyside6"
 version = "6.12.0"
@@ -8467,34 +8406,46 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/4d/8c/dfd4f339285d2e6c31067789b9b7dd2cee26c098ecc78ac7200fb04aa344/pyside6-6.12.0-cp310-abi3-manylinux_2_39_aarch64.whl", hash = "sha256:8920e163f60493e18822d20f1e01c7c4bcf9c1c5cfbc68284788896f692594f8", size = 577708, upload-time = "2026-10-08T09:11:18.705Z" },
     { url = "https://files.pythonhosted.org/packages/a1/da/8e8514fc29ea916c3cd71a524480b77409e19ed12d709e8a5d73be089b81/pyside6-6.12.0-cp310-abi3-win_amd64.whl", hash = "sha256:31a8d2893f2f28ab483b1534dde0438f27af6e234593de30425cb4729052d8f8", size = 578958, upload-time = "2026-10-08T09:11:20.179Z" },
     { url = "https://files.pythonhosted.org/packages/5f/2e/3ebafaf7f4ccea6f6ea9d017f7fc7d9484b79e6b31d1cb92f5f5262055f0/pyside6-6.12.0-cp310-abi3-win_arm64.whl", hash = "sha256:22e2ec6407f32b61955a28f91ab55676e60017210285c28f0c381bfeed389414", size = 562743, upload-time = "2026-10-08T09:11:21.552Z" },
-]
 ```
 
 **Line-by-line explanation**
 
-- **L212** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
-- **L213** — Name this locked distribution pyside6. Names identify packages to install; they are not necessarily identical to Python import names (for example pyside6 is imported as PySide6).
-- **L214** — Pin pyside6 to this exact release version. A lock chooses one version within the declared constraints; it does not mean this is the newest release available.
-- **L215** — Record the package registry from which pyside6 is resolved. The https://pypi.org/simple address is package-index metadata, not the TIFR VPN server.
-- **L216** — Begin pyside6 dependency references: packages this package itself needs. Some are indirect/transitive dependencies you did not explicitly list in pyproject.toml.
-- **L217** — Reference the dependency named pyside6-addons. It is needed by pyside6; dependency resolution also follows that package's own dependency references.
-- **L218** — Reference the dependency named pyside6-essentials. It is needed by pyside6; dependency resolution also follows that package's own dependency references.
-- **L219** — Reference the dependency named pyside6-pdf. It is needed by pyside6; dependency resolution also follows that package's own dependency references.
-- **L220** — Reference the dependency named pyside6-webengine. It is needed by pyside6; dependency resolution also follows that package's own dependency references.
-- **L221** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
-- **L222** — Begin the list of prebuilt wheel artifacts available for pyside6 across supported Python/platform combinations. The installer selects an applicable artifact; it does not install every wheel listed.
-- **L223** — One prebuilt wheel choice: pyside6-6.12.0-cp310-abi3-macosx\_14\_0\_universal2.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6 and is data, not VPN logic.
-- **L224** — One prebuilt wheel choice: pyside6-6.12.0-cp310-abi3-manylinux\_2\_34\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6 and is data, not VPN logic.
-- **L225** — One prebuilt wheel choice: pyside6-6.12.0-cp310-abi3-manylinux\_2\_39\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6 and is data, not VPN logic.
-- **L226** — One prebuilt wheel choice: pyside6-6.12.0-cp310-abi3-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6 and is data, not VPN logic.
-- **L227** — One prebuilt wheel choice: pyside6-6.12.0-cp310-abi3-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6 and is data, not VPN logic.
-- **L228** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
+- **L225** — Pin pycparser to this exact release version. A lock chooses one version within the declared constraints; it does not mean this is the newest release available.
+- **L226** — Record the package registry from which pycparser is resolved. The https://pypi.org/simple address is package-index metadata, not the TIFR VPN server.
+- **L227** — Record the source archive for pycparser: URL gives its location, hash gives the expected SHA-256 bytes fingerprint, size is the archive size in bytes, and upload-time is registry metadata. A source archive may need building if used; this record does not itself download it.
+- **L228** — Begin the list of prebuilt wheel artifacts available for pycparser across supported Python/platform combinations. The installer selects an applicable artifact; it does not install every wheel listed.
+- **L229** — One prebuilt wheel choice: pycparser-3.12-py3-none-any.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pycparser and is data, not VPN logic.
+- **L230** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
+- **L232** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
+- **L233** — Identify the new PyGObject package record.
+- **L234** — Lock PyGObject to 3.58.1 for this snapshot.
+- **L235** — Record the package registry from which cffi is resolved. The https://pypi.org/simple address is package-index metadata, not the TIFR VPN server.
+- **L236** — Begin cffi dependency references: packages this package itself needs. Some are indirect/transitive dependencies you did not explicitly list in pyproject.toml.
+- **L237** — Record Pycairo as the Python dependency of PyGObject.
+- **L238** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
+- **L239** — Record the source archive for pygobject, its download location, integrity hash, size and publication metadata. uv may build this archive locally when there is no suitable wheel.
+- **L241** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
+- **L242** — Name this locked distribution pyside6. Names identify packages to install; they are not necessarily identical to Python import names (for example pyside6 is imported as PySide6).
+- **L243** — Pin pyside6 to this exact release version. A lock chooses one version within the declared constraints; it does not mean this is the newest release available.
+- **L244** — Record the package registry from which pyside6 is resolved. The https://pypi.org/simple address is package-index metadata, not the TIFR VPN server.
+- **L245** — Begin pyside6 dependency references: packages this package itself needs. Some are indirect/transitive dependencies you did not explicitly list in pyproject.toml.
+- **L246** — Reference the dependency named pyside6-addons. It is needed by pyside6; dependency resolution also follows that package's own dependency references.
+- **L247** — Reference the dependency named pyside6-essentials. It is needed by pyside6; dependency resolution also follows that package's own dependency references.
+- **L248** — Reference the dependency named pyside6-pdf. It is needed by pyside6; dependency resolution also follows that package's own dependency references.
+- **L249** — Reference the dependency named pyside6-webengine. It is needed by pyside6; dependency resolution also follows that package's own dependency references.
+- **L250** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
+- **L251** — Begin the list of prebuilt wheel artifacts available for pyside6 across supported Python/platform combinations. The installer selects an applicable artifact; it does not install every wheel listed.
+- **L252** — One prebuilt wheel choice: pyside6-6.12.0-cp310-abi3-macosx\_14\_0\_universal2.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6 and is data, not VPN logic.
+- **L253** — One prebuilt wheel choice: pyside6-6.12.0-cp310-abi3-manylinux\_2\_34\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6 and is data, not VPN logic.
+- **L254** — One prebuilt wheel choice: pyside6-6.12.0-cp310-abi3-manylinux\_2\_39\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6 and is data, not VPN logic.
+- **L255** — One prebuilt wheel choice: pyside6-6.12.0-cp310-abi3-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6 and is data, not VPN logic.
+- **L256** — One prebuilt wheel choice: pyside6-6.12.0-cp310-abi3-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6 and is data, not VPN logic.
 
-
-#### 13.29.11 L230–L244 · Locked package pyside6-addons
-
+#### 13.29.9 L257–L288 · File contents
 
 ```toml
+]
+
 [[package]]
 name = "pyside6-addons"
 version = "6.12.0"
@@ -8509,30 +8460,7 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/02/41/ba3d52fe2acd942ebf71eb02b3bdf0897f7f6f4ce8f52289cb50228e48d3/pyside6_addons-6.12.0-cp310-abi3-win_amd64.whl", hash = "sha256:98d8d62010da6605344cee83e5c96fb846170a1f2d924523f10f5d92078b02b0", size = 40522402, upload-time = "2026-10-08T09:08:31.678Z" },
     { url = "https://files.pythonhosted.org/packages/ea/73/860ab764368cd59b1a09cb891a9a4519425395ad1f6c47d83fde908fe603/pyside6_addons-6.12.0-cp310-abi3-win_arm64.whl", hash = "sha256:3c079cbaad2ad28bc5bfa92fd6bac4ba28d622b825825e3b4220f0682599b2db", size = 35940682, upload-time = "2026-10-08T09:08:35.424Z" },
 ]
-```
 
-**Line-by-line explanation**
-
-- **L230** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
-- **L231** — Name this locked distribution pyside6-addons. Names identify packages to install; they are not necessarily identical to Python import names (for example pyside6 is imported as PySide6).
-- **L232** — Pin pyside6-addons to this exact release version. A lock chooses one version within the declared constraints; it does not mean this is the newest release available.
-- **L233** — Record the package registry from which pyside6-addons is resolved. The https://pypi.org/simple address is package-index metadata, not the TIFR VPN server.
-- **L234** — Begin pyside6-addons dependency references: packages this package itself needs. Some are indirect/transitive dependencies you did not explicitly list in pyproject.toml.
-- **L235** — Reference the dependency named pyside6-essentials. It is needed by pyside6-addons; dependency resolution also follows that package's own dependency references.
-- **L236** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
-- **L237** — Begin the list of prebuilt wheel artifacts available for pyside6-addons across supported Python/platform combinations. The installer selects an applicable artifact; it does not install every wheel listed.
-- **L238** — One prebuilt wheel choice: pyside6\_addons-6.12.0-cp310-abi3-macosx\_14\_0\_universal2.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-addons and is data, not VPN logic.
-- **L239** — One prebuilt wheel choice: pyside6\_addons-6.12.0-cp310-abi3-manylinux\_2\_34\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-addons and is data, not VPN logic.
-- **L240** — One prebuilt wheel choice: pyside6\_addons-6.12.0-cp310-abi3-manylinux\_2\_39\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-addons and is data, not VPN logic.
-- **L241** — One prebuilt wheel choice: pyside6\_addons-6.12.0-cp310-abi3-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-addons and is data, not VPN logic.
-- **L242** — One prebuilt wheel choice: pyside6\_addons-6.12.0-cp310-abi3-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-addons and is data, not VPN logic.
-- **L243** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
-
-
-#### 13.29.12 L245–L259 · Locked package pyside6-essentials
-
-
-```toml
 [[package]]
 name = "pyside6-essentials"
 version = "6.12.0"
@@ -8547,28 +8475,42 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/03/61/9a7e32a37b224f68506785bfb0f288d516098ec71681782d72b695a6c95d/pyside6_essentials-6.12.0-cp310-abi3-win_amd64.whl", hash = "sha256:c9a95102aa23c1f86516a30d5a9be37552d324eee7e567eb7508973f1218cb42", size = 82153795, upload-time = "2026-10-08T09:10:15.104Z" },
     { url = "https://files.pythonhosted.org/packages/92/11/43afb3d0e7c25dd09f0eb7e44f1283dadb5fa8d8b517249fe3fde02e6702/pyside6_essentials-6.12.0-cp310-abi3-win_arm64.whl", hash = "sha256:c76aa689989bf9bb9b45535e0a81c6733294df720b0eed1308fa30d2606b98cc", size = 62073456, upload-time = "2026-10-08T09:10:20.202Z" },
 ]
+
 ```
 
 **Line-by-line explanation**
 
-- **L245** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
-- **L246** — Name this locked distribution pyside6-essentials. Names identify packages to install; they are not necessarily identical to Python import names (for example pyside6 is imported as PySide6).
-- **L247** — Pin pyside6-essentials to this exact release version. A lock chooses one version within the declared constraints; it does not mean this is the newest release available.
-- **L248** — Record the package registry from which pyside6-essentials is resolved. The https://pypi.org/simple address is package-index metadata, not the TIFR VPN server.
-- **L249** — Begin pyside6-essentials dependency references: packages this package itself needs. Some are indirect/transitive dependencies you did not explicitly list in pyproject.toml.
-- **L250** — Reference the dependency named shiboken6. It is needed by pyside6-essentials; dependency resolution also follows that package's own dependency references.
-- **L251** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
-- **L252** — Begin the list of prebuilt wheel artifacts available for pyside6-essentials across supported Python/platform combinations. The installer selects an applicable artifact; it does not install every wheel listed.
-- **L253** — One prebuilt wheel choice: pyside6\_essentials-6.12.0-cp310-abi3-macosx\_14\_0\_universal2.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-essentials and is data, not VPN logic.
-- **L254** — One prebuilt wheel choice: pyside6\_essentials-6.12.0-cp310-abi3-manylinux\_2\_34\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-essentials and is data, not VPN logic.
-- **L255** — One prebuilt wheel choice: pyside6\_essentials-6.12.0-cp310-abi3-manylinux\_2\_39\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-essentials and is data, not VPN logic.
-- **L256** — One prebuilt wheel choice: pyside6\_essentials-6.12.0-cp310-abi3-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-essentials and is data, not VPN logic.
-- **L257** — One prebuilt wheel choice: pyside6\_essentials-6.12.0-cp310-abi3-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-essentials and is data, not VPN logic.
-- **L258** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
+- **L257** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
+- **L259** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
+- **L260** — Name this locked distribution pyside6-addons. Names identify packages to install; they are not necessarily identical to Python import names (for example pyside6 is imported as PySide6).
+- **L261** — Pin pyside6-addons to this exact release version. A lock chooses one version within the declared constraints; it does not mean this is the newest release available.
+- **L262** — Record the package registry from which pyside6-addons is resolved. The https://pypi.org/simple address is package-index metadata, not the TIFR VPN server.
+- **L263** — Begin pyside6-addons dependency references: packages this package itself needs. Some are indirect/transitive dependencies you did not explicitly list in pyproject.toml.
+- **L264** — Reference the dependency named pyside6-essentials. It is needed by pyside6-addons; dependency resolution also follows that package's own dependency references.
+- **L265** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
+- **L266** — Begin the list of prebuilt wheel artifacts available for pyside6-addons across supported Python/platform combinations. The installer selects an applicable artifact; it does not install every wheel listed.
+- **L267** — One prebuilt wheel choice: pyside6\_addons-6.12.0-cp310-abi3-macosx\_14\_0\_universal2.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-addons and is data, not VPN logic.
+- **L268** — One prebuilt wheel choice: pyside6\_addons-6.12.0-cp310-abi3-manylinux\_2\_34\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-addons and is data, not VPN logic.
+- **L269** — One prebuilt wheel choice: pyside6\_addons-6.12.0-cp310-abi3-manylinux\_2\_39\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-addons and is data, not VPN logic.
+- **L270** — One prebuilt wheel choice: pyside6\_addons-6.12.0-cp310-abi3-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-addons and is data, not VPN logic.
+- **L271** — One prebuilt wheel choice: pyside6\_addons-6.12.0-cp310-abi3-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-addons and is data, not VPN logic.
+- **L272** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
+- **L274** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
+- **L275** — Name this locked distribution pyside6-essentials. Names identify packages to install; they are not necessarily identical to Python import names (for example pyside6 is imported as PySide6).
+- **L276** — Pin pyside6-essentials to this exact release version. A lock chooses one version within the declared constraints; it does not mean this is the newest release available.
+- **L277** — Record the package registry from which pyside6-essentials is resolved. The https://pypi.org/simple address is package-index metadata, not the TIFR VPN server.
+- **L278** — Begin pyside6-essentials dependency references: packages this package itself needs. Some are indirect/transitive dependencies you did not explicitly list in pyproject.toml.
+- **L279** — Reference the dependency named shiboken6. It is needed by pyside6-essentials; dependency resolution also follows that package's own dependency references.
+- **L280** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
+- **L281** — Begin the list of prebuilt wheel artifacts available for pyside6-essentials across supported Python/platform combinations. The installer selects an applicable artifact; it does not install every wheel listed.
+- **L282** — One prebuilt wheel choice: pyside6\_essentials-6.12.0-cp310-abi3-macosx\_14\_0\_universal2.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-essentials and is data, not VPN logic.
+- **L283** — One prebuilt wheel choice: pyside6\_essentials-6.12.0-cp310-abi3-manylinux\_2\_34\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-essentials and is data, not VPN logic.
+- **L284** — One prebuilt wheel choice: pyside6\_essentials-6.12.0-cp310-abi3-manylinux\_2\_39\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-essentials and is data, not VPN logic.
+- **L285** — One prebuilt wheel choice: pyside6\_essentials-6.12.0-cp310-abi3-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-essentials and is data, not VPN logic.
+- **L286** — One prebuilt wheel choice: pyside6\_essentials-6.12.0-cp310-abi3-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-essentials and is data, not VPN logic.
+- **L287** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
 
-
-#### 13.29.13 L260–L274 · Locked package pyside6-pdf
-
+#### 13.29.10 L289–L320 · File contents
 
 ```toml
 [[package]]
@@ -8585,30 +8527,7 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/0e/8a/3f5eab9eb9e6486f0334b100322bbd0aff432dd90ad7977a3910979a163f/pyside6_pdf-6.12.0.140-cp310-abi3-win_amd64.whl", hash = "sha256:4971ba1a0ca15e7c29cfd808e9600aeb46b2305dad01456eb09fa3197166268e", size = 2983516, upload-time = "2026-10-08T09:07:42.312Z" },
     { url = "https://files.pythonhosted.org/packages/b2/87/5c29bdaf47bf0b0cee7f467e86ffeb07be5bf8aa2afd2ff6f0785d0515b4/pyside6_pdf-6.12.0.140-cp310-abi3-win_arm64.whl", hash = "sha256:ce6e4d858df1eb4e2adcbd8ba212f3611ce60f9978881fe10d417f36013a6ff9", size = 2758117, upload-time = "2026-10-08T09:07:43.936Z" },
 ]
-```
 
-**Line-by-line explanation**
-
-- **L260** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
-- **L261** — Name this locked distribution pyside6-pdf. Names identify packages to install; they are not necessarily identical to Python import names (for example pyside6 is imported as PySide6).
-- **L262** — Pin pyside6-pdf to this exact release version. A lock chooses one version within the declared constraints; it does not mean this is the newest release available.
-- **L263** — Record the package registry from which pyside6-pdf is resolved. The https://pypi.org/simple address is package-index metadata, not the TIFR VPN server.
-- **L264** — Begin pyside6-pdf dependency references: packages this package itself needs. Some are indirect/transitive dependencies you did not explicitly list in pyproject.toml.
-- **L265** — Reference the dependency named pyside6-essentials. It is needed by pyside6-pdf; dependency resolution also follows that package's own dependency references.
-- **L266** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
-- **L267** — Begin the list of prebuilt wheel artifacts available for pyside6-pdf across supported Python/platform combinations. The installer selects an applicable artifact; it does not install every wheel listed.
-- **L268** — One prebuilt wheel choice: pyside6\_pdf-6.12.0.140-cp310-abi3-macosx\_14\_0\_universal2.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-pdf and is data, not VPN logic.
-- **L269** — One prebuilt wheel choice: pyside6\_pdf-6.12.0.140-cp310-abi3-manylinux\_2\_34\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-pdf and is data, not VPN logic.
-- **L270** — One prebuilt wheel choice: pyside6\_pdf-6.12.0.140-cp310-abi3-manylinux\_2\_39\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-pdf and is data, not VPN logic.
-- **L271** — One prebuilt wheel choice: pyside6\_pdf-6.12.0.140-cp310-abi3-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-pdf and is data, not VPN logic.
-- **L272** — One prebuilt wheel choice: pyside6\_pdf-6.12.0.140-cp310-abi3-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-pdf and is data, not VPN logic.
-- **L273** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
-
-
-#### 13.29.14 L275–L289 · Locked package pyside6-webengine
-
-
-```toml
 [[package]]
 name = "pyside6-webengine"
 version = "6.12.0.140"
@@ -8623,32 +8542,47 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/21/0d/260c7c286f2d4e8a49c099152a385414a872f022117f937824ca0a3f38e5/pyside6_webengine-6.12.0.140-cp310-abi3-win_amd64.whl", hash = "sha256:f9b61b1d457a591ee590a6b80515f25a3e61e2576a2a0a70566380f9d9de4ab0", size = 131697708, upload-time = "2026-10-08T09:06:29.606Z" },
     { url = "https://files.pythonhosted.org/packages/76/34/7a2d1d7b95c96adf173c77d1862c2587789f7afb8754430fcfc2c9e4e47a/pyside6_webengine-6.12.0.140-cp310-abi3-win_arm64.whl", hash = "sha256:44d1fac2a057a71b8f947fc5177a95fab8a0ea4e2fda068f223a00fd0193a8c7", size = 65723, upload-time = "2026-10-08T09:06:32.559Z" },
 ]
+
+[[package]]
+name = "shiboken6"
 ```
 
 **Line-by-line explanation**
 
-- **L275** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
-- **L276** — Name this locked distribution pyside6-webengine. Names identify packages to install; they are not necessarily identical to Python import names (for example pyside6 is imported as PySide6).
-- **L277** — Pin pyside6-webengine to this exact release version. A lock chooses one version within the declared constraints; it does not mean this is the newest release available.
-- **L278** — Record the package registry from which pyside6-webengine is resolved. The https://pypi.org/simple address is package-index metadata, not the TIFR VPN server.
-- **L279** — Begin pyside6-webengine dependency references: packages this package itself needs. Some are indirect/transitive dependencies you did not explicitly list in pyproject.toml.
-- **L280** — Reference the dependency named pyside6-addons. It is needed by pyside6-webengine; dependency resolution also follows that package's own dependency references.
-- **L281** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
-- **L282** — Begin the list of prebuilt wheel artifacts available for pyside6-webengine across supported Python/platform combinations. The installer selects an applicable artifact; it does not install every wheel listed.
-- **L283** — One prebuilt wheel choice: pyside6\_webengine-6.12.0.140-cp310-abi3-macosx\_14\_0\_universal2.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-webengine and is data, not VPN logic.
-- **L284** — One prebuilt wheel choice: pyside6\_webengine-6.12.0.140-cp310-abi3-manylinux\_2\_34\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-webengine and is data, not VPN logic.
-- **L285** — One prebuilt wheel choice: pyside6\_webengine-6.12.0.140-cp310-abi3-manylinux\_2\_39\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-webengine and is data, not VPN logic.
-- **L286** — One prebuilt wheel choice: pyside6\_webengine-6.12.0.140-cp310-abi3-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-webengine and is data, not VPN logic.
-- **L287** — One prebuilt wheel choice: pyside6\_webengine-6.12.0.140-cp310-abi3-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-webengine and is data, not VPN logic.
-- **L288** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
+- **L289** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
+- **L290** — Name this locked distribution pyside6-pdf. Names identify packages to install; they are not necessarily identical to Python import names (for example pyside6 is imported as PySide6).
+- **L291** — Pin pyside6-pdf to this exact release version. A lock chooses one version within the declared constraints; it does not mean this is the newest release available.
+- **L292** — Record the package registry from which pyside6-pdf is resolved. The https://pypi.org/simple address is package-index metadata, not the TIFR VPN server.
+- **L293** — Begin pyside6-pdf dependency references: packages this package itself needs. Some are indirect/transitive dependencies you did not explicitly list in pyproject.toml.
+- **L294** — Reference the dependency named pyside6-essentials. It is needed by pyside6-pdf; dependency resolution also follows that package's own dependency references.
+- **L295** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
+- **L296** — Begin the list of prebuilt wheel artifacts available for pyside6-pdf across supported Python/platform combinations. The installer selects an applicable artifact; it does not install every wheel listed.
+- **L297** — One prebuilt wheel choice: pyside6\_pdf-6.12.0.140-cp310-abi3-macosx\_14\_0\_universal2.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-pdf and is data, not VPN logic.
+- **L298** — One prebuilt wheel choice: pyside6\_pdf-6.12.0.140-cp310-abi3-manylinux\_2\_34\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-pdf and is data, not VPN logic.
+- **L299** — One prebuilt wheel choice: pyside6\_pdf-6.12.0.140-cp310-abi3-manylinux\_2\_39\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-pdf and is data, not VPN logic.
+- **L300** — One prebuilt wheel choice: pyside6\_pdf-6.12.0.140-cp310-abi3-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-pdf and is data, not VPN logic.
+- **L301** — One prebuilt wheel choice: pyside6\_pdf-6.12.0.140-cp310-abi3-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-pdf and is data, not VPN logic.
+- **L302** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
+- **L304** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
+- **L305** — Name this locked distribution pyside6-webengine. Names identify packages to install; they are not necessarily identical to Python import names (for example pyside6 is imported as PySide6).
+- **L306** — Pin pyside6-webengine to this exact release version. A lock chooses one version within the declared constraints; it does not mean this is the newest release available.
+- **L307** — Record the package registry from which pyside6-webengine is resolved. The https://pypi.org/simple address is package-index metadata, not the TIFR VPN server.
+- **L308** — Begin pyside6-webengine dependency references: packages this package itself needs. Some are indirect/transitive dependencies you did not explicitly list in pyproject.toml.
+- **L309** — Reference the dependency named pyside6-addons. It is needed by pyside6-webengine; dependency resolution also follows that package's own dependency references.
+- **L310** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
+- **L311** — Begin the list of prebuilt wheel artifacts available for pyside6-webengine across supported Python/platform combinations. The installer selects an applicable artifact; it does not install every wheel listed.
+- **L312** — One prebuilt wheel choice: pyside6\_webengine-6.12.0.140-cp310-abi3-macosx\_14\_0\_universal2.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-webengine and is data, not VPN logic.
+- **L313** — One prebuilt wheel choice: pyside6\_webengine-6.12.0.140-cp310-abi3-manylinux\_2\_34\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-webengine and is data, not VPN logic.
+- **L314** — One prebuilt wheel choice: pyside6\_webengine-6.12.0.140-cp310-abi3-manylinux\_2\_39\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-webengine and is data, not VPN logic.
+- **L315** — One prebuilt wheel choice: pyside6\_webengine-6.12.0.140-cp310-abi3-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-webengine and is data, not VPN logic.
+- **L316** — One prebuilt wheel choice: pyside6\_webengine-6.12.0.140-cp310-abi3-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to pyside6-webengine and is data, not VPN logic.
+- **L317** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
+- **L319** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
+- **L320** — Name this locked distribution shiboken6. Names identify packages to install; they are not necessarily identical to Python import names (for example pyside6 is imported as PySide6).
 
-
-#### 13.29.15 L290–L301 · Locked package shiboken6
-
+#### 13.29.11 L321–L352 · File contents
 
 ```toml
-[[package]]
-name = "shiboken6"
 version = "6.12.0"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
@@ -8658,27 +8592,7 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/2a/b6/bee97e7a2edeab72aafabb46ee5adc939790a638d107860b4cad7a20e407/shiboken6-6.12.0-cp310-abi3-win_amd64.whl", hash = "sha256:a1906cb8116869178c64b6bab52623bbc8b4ceed7b30bfc3c9aa0f6e67f6438e", size = 1265476, upload-time = "2026-10-08T09:10:45.627Z" },
     { url = "https://files.pythonhosted.org/packages/8c/d5/5894d35f8a470ca8acff0d1cd8f15b1c94cbfdfe0ce4a6ec0fcf10b95bd1/shiboken6-6.12.0-cp310-abi3-win_arm64.whl", hash = "sha256:da382e68f0815b31b6dc2bce11a465b148c4f42c37b91546a361de1576567d10", size = 1838851, upload-time = "2026-10-08T09:10:47.123Z" },
 ]
-```
 
-**Line-by-line explanation**
-
-- **L290** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
-- **L291** — Name this locked distribution shiboken6. Names identify packages to install; they are not necessarily identical to Python import names (for example pyside6 is imported as PySide6).
-- **L292** — Pin shiboken6 to this exact release version. A lock chooses one version within the declared constraints; it does not mean this is the newest release available.
-- **L293** — Record the package registry from which shiboken6 is resolved. The https://pypi.org/simple address is package-index metadata, not the TIFR VPN server.
-- **L294** — Begin the list of prebuilt wheel artifacts available for shiboken6 across supported Python/platform combinations. The installer selects an applicable artifact; it does not install every wheel listed.
-- **L295** — One prebuilt wheel choice: shiboken6-6.12.0-cp310-abi3-macosx\_14\_0\_universal2.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to shiboken6 and is data, not VPN logic.
-- **L296** — One prebuilt wheel choice: shiboken6-6.12.0-cp310-abi3-manylinux\_2\_34\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to shiboken6 and is data, not VPN logic.
-- **L297** — One prebuilt wheel choice: shiboken6-6.12.0-cp310-abi3-manylinux\_2\_39\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to shiboken6 and is data, not VPN logic.
-- **L298** — One prebuilt wheel choice: shiboken6-6.12.0-cp310-abi3-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to shiboken6 and is data, not VPN logic.
-- **L299** — One prebuilt wheel choice: shiboken6-6.12.0-cp310-abi3-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to shiboken6 and is data, not VPN logic.
-- **L300** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
-
-
-#### 13.29.16 L302–L320 · Locked package tifrvpn-tui
-
-
-```toml
 [[package]]
 name = "tifrvpn-tui"
 version = "0.1.0"
@@ -8686,6 +8600,7 @@ source = { editable = "." }
 dependencies = [
     { name = "cryptography" },
     { name = "numpy" },
+    { name = "pygobject" },
     { name = "pyside6" },
     { name = "zxing-cpp" },
 ]
@@ -8694,37 +8609,49 @@ dependencies = [
 requires-dist = [
     { name = "cryptography", specifier = ">=50.0.2" },
     { name = "numpy", specifier = ">=2.5.4" },
+    { name = "pygobject", specifier = ">=3.58.1" },
     { name = "pyside6", specifier = ">=6.12.0" },
     { name = "zxing-cpp", specifier = ">=3.1.1" },
 ]
+
+[[package]]
 ```
 
 **Line-by-line explanation**
 
-- **L302** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
-- **L303** — Name this locked distribution tifrvpn-tui. Names identify packages to install; they are not necessarily identical to Python import names (for example pyside6 is imported as PySide6).
-- **L304** — Pin tifrvpn-tui to this exact release version. A lock chooses one version within the declared constraints; it does not mean this is the newest release available.
-- **L305** — Use the current local project directory as an editable package source. Changes to that package source can be reflected without building a separate installed copy; this does not update the five scripts copied by install.sh.
-- **L306** — Begin tifrvpn-tui dependency references: packages this package itself needs. Some are indirect/transitive dependencies you did not explicitly list in pyproject.toml.
-- **L307** — Reference the dependency named cryptography. It is needed by tifrvpn-tui; dependency resolution also follows that package's own dependency references.
-- **L308** — Reference the dependency named numpy. It is needed by tifrvpn-tui; dependency resolution also follows that package's own dependency references.
-- **L309** — Reference the dependency named pyside6. It is needed by tifrvpn-tui; dependency resolution also follows that package's own dependency references.
-- **L310** — Reference the dependency named zxing-cpp. It is needed by tifrvpn-tui; dependency resolution also follows that package's own dependency references.
-- **L311** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
-- **L313** — Open additional metadata for the preceding local project package, including its originally declared dependency constraints.
-- **L314** — Begin the local project's declared dependency requirements, retaining the minimum-version constraints from its metadata.
-- **L315** — Reference the dependency named cryptography. specifier records the required version range, whereas that dependency's own package record gives its exact locked version.
-- **L316** — Reference the dependency named numpy. specifier records the required version range, whereas that dependency's own package record gives its exact locked version.
-- **L317** — Reference the dependency named pyside6. specifier records the required version range, whereas that dependency's own package record gives its exact locked version.
-- **L318** — Reference the dependency named zxing-cpp. specifier records the required version range, whereas that dependency's own package record gives its exact locked version.
-- **L319** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
+- **L321** — Pin shiboken6 to this exact release version. A lock chooses one version within the declared constraints; it does not mean this is the newest release available.
+- **L322** — Record the package registry from which shiboken6 is resolved. The https://pypi.org/simple address is package-index metadata, not the TIFR VPN server.
+- **L323** — Begin the list of prebuilt wheel artifacts available for shiboken6 across supported Python/platform combinations. The installer selects an applicable artifact; it does not install every wheel listed.
+- **L324** — One prebuilt wheel choice: shiboken6-6.12.0-cp310-abi3-macosx\_14\_0\_universal2.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to shiboken6 and is data, not VPN logic.
+- **L325** — One prebuilt wheel choice: shiboken6-6.12.0-cp310-abi3-manylinux\_2\_34\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to shiboken6 and is data, not VPN logic.
+- **L326** — One prebuilt wheel choice: shiboken6-6.12.0-cp310-abi3-manylinux\_2\_39\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to shiboken6 and is data, not VPN logic.
+- **L327** — One prebuilt wheel choice: shiboken6-6.12.0-cp310-abi3-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to shiboken6 and is data, not VPN logic.
+- **L328** — One prebuilt wheel choice: shiboken6-6.12.0-cp310-abi3-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to shiboken6 and is data, not VPN logic.
+- **L329** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
+- **L331** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
+- **L332** — Name this locked distribution tifrvpn-tui. Names identify packages to install; they are not necessarily identical to Python import names (for example pyside6 is imported as PySide6).
+- **L333** — Pin tifrvpn-tui to this exact release version. A lock chooses one version within the declared constraints; it does not mean this is the newest release available.
+- **L334** — Use the current local project directory as an editable package source. Changes to that package source can be reflected without building a separate installed copy; this does not update the five scripts copied by install.sh.
+- **L335** — Begin tifrvpn-tui dependency references: packages this package itself needs. Some are indirect/transitive dependencies you did not explicitly list in pyproject.toml.
+- **L336** — Reference the dependency named cryptography. It is needed by tifrvpn-tui; dependency resolution also follows that package's own dependency references.
+- **L337** — Reference the dependency named numpy. It is needed by tifrvpn-tui; dependency resolution also follows that package's own dependency references.
+- **L338** — Include PyGObject in this local project selected dependency list.
+- **L339** — Reference the dependency named pyside6. It is needed by tifrvpn-tui; dependency resolution also follows that package's own dependency references.
+- **L340** — Reference the dependency named zxing-cpp. It is needed by tifrvpn-tui; dependency resolution also follows that package's own dependency references.
+- **L341** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
+- **L343** — Open additional metadata for the preceding local project package, including its originally declared dependency constraints.
+- **L344** — Begin the local project's declared dependency requirements, retaining the minimum-version constraints from its metadata.
+- **L345** — Reference the dependency named cryptography. specifier records the required version range, whereas that dependency's own package record gives its exact locked version.
+- **L346** — Reference the dependency named numpy. specifier records the required version range, whereas that dependency's own package record gives its exact locked version.
+- **L347** — Record the project requirement pygobject>=3.58.1 alongside the exact selected PyGObject record.
+- **L348** — Reference the dependency named pyside6. specifier records the required version range, whereas that dependency's own package record gives its exact locked version.
+- **L349** — Reference the dependency named zxing-cpp. specifier records the required version range, whereas that dependency's own package record gives its exact locked version.
+- **L350** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
+- **L352** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
 
-
-#### 13.29.17 L321–L345 · Locked package zxing-cpp
-
+#### 13.29.12 L353–L376 · File contents
 
 ```toml
-[[package]]
 name = "zxing-cpp"
 version = "3.1.1"
 source = { registry = "https://pypi.org/simple" }
@@ -8753,34 +8680,32 @@ wheels = [
 
 **Line-by-line explanation**
 
-- **L321** — Start another package record in the TOML array of packages. Each record will name one exact resolved distribution and its source/dependencies/artifacts.
-- **L322** — Name this locked distribution zxing-cpp. Names identify packages to install; they are not necessarily identical to Python import names (for example pyside6 is imported as PySide6).
-- **L323** — Pin zxing-cpp to this exact release version. A lock chooses one version within the declared constraints; it does not mean this is the newest release available.
-- **L324** — Record the package registry from which zxing-cpp is resolved. The https://pypi.org/simple address is package-index metadata, not the TIFR VPN server.
-- **L325** — Record the source archive for zxing-cpp: URL gives its location, hash gives the expected SHA-256 bytes fingerprint, size is the archive size in bytes, and upload-time is registry metadata. A source archive may need building if used; this record does not itself download it.
-- **L326** — Begin the list of prebuilt wheel artifacts available for zxing-cpp across supported Python/platform combinations. The installer selects an applicable artifact; it does not install every wheel listed.
-- **L327** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp312-abi3-macosx\_10\_13\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
-- **L328** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp312-abi3-macosx\_11\_0\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
-- **L329** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp312-abi3-manylinux\_2\_26\_aarch64.manylinux\_2\_28\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
-- **L330** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp312-abi3-manylinux\_2\_27\_x86\_64.manylinux\_2\_28\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
-- **L331** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp312-abi3-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
-- **L332** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp312-abi3-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
-- **L333** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp313-cp313t-macosx\_10\_15\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
-- **L334** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp313-cp313t-macosx\_11\_0\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
-- **L335** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp313-cp313t-manylinux\_2\_26\_aarch64.manylinux\_2\_28\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
-- **L336** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp313-cp313t-manylinux\_2\_27\_x86\_64.manylinux\_2\_28\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
-- **L337** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp313-cp313t-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
-- **L338** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp313-cp313t-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
-- **L339** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp314-cp314t-macosx\_10\_15\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
-- **L340** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp314-cp314t-macosx\_11\_0\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
-- **L341** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp314-cp314t-manylinux\_2\_26\_aarch64.manylinux\_2\_28\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
-- **L342** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp314-cp314t-manylinux\_2\_27\_x86\_64.manylinux\_2\_28\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
-- **L343** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp314-cp314t-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
-- **L344** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp314-cp314t-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
-- **L345** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
+- **L353** — Name this locked distribution zxing-cpp. Names identify packages to install; they are not necessarily identical to Python import names (for example pyside6 is imported as PySide6).
+- **L354** — Pin zxing-cpp to this exact release version. A lock chooses one version within the declared constraints; it does not mean this is the newest release available.
+- **L355** — Record the package registry from which zxing-cpp is resolved. The https://pypi.org/simple address is package-index metadata, not the TIFR VPN server.
+- **L356** — Record the source archive for zxing-cpp: URL gives its location, hash gives the expected SHA-256 bytes fingerprint, size is the archive size in bytes, and upload-time is registry metadata. A source archive may need building if used; this record does not itself download it.
+- **L357** — Begin the list of prebuilt wheel artifacts available for zxing-cpp across supported Python/platform combinations. The installer selects an applicable artifact; it does not install every wheel listed.
+- **L358** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp312-abi3-macosx\_10\_13\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
+- **L359** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp312-abi3-macosx\_11\_0\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
+- **L360** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp312-abi3-manylinux\_2\_26\_aarch64.manylinux\_2\_28\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
+- **L361** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp312-abi3-manylinux\_2\_27\_x86\_64.manylinux\_2\_28\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
+- **L362** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp312-abi3-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
+- **L363** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp312-abi3-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
+- **L364** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp313-cp313t-macosx\_10\_15\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
+- **L365** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp313-cp313t-macosx\_11\_0\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
+- **L366** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp313-cp313t-manylinux\_2\_26\_aarch64.manylinux\_2\_28\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
+- **L367** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp313-cp313t-manylinux\_2\_27\_x86\_64.manylinux\_2\_28\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
+- **L368** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp313-cp313t-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
+- **L369** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp313-cp313t-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
+- **L370** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp314-cp314t-macosx\_10\_15\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
+- **L371** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp314-cp314t-macosx\_11\_0\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
+- **L372** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp314-cp314t-manylinux\_2\_26\_aarch64.manylinux\_2\_28\_aarch64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
+- **L373** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp314-cp314t-manylinux\_2\_27\_x86\_64.manylinux\_2\_28\_x86\_64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
+- **L374** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp314-cp314t-win\_amd64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
+- **L375** — One prebuilt wheel choice: zxing\_cpp-3.1.1-cp314-cp314t-win\_arm64.whl. The filename includes distribution/release, Python compatibility, ABI compatibility and platform tags. Common tags: cp313 means CPython 3.13; abi3 is a stable-ABI wheel; none-any means pure-Python/platform-independent; x86\_64 and aarch64/arm64 distinguish CPU architectures; win, macosx and manylinux distinguish platform families. url locates this exact file, hash is its expected SHA-256 fingerprint, size counts bytes, and upload-time records publication metadata. This entry belongs to zxing-cpp and is data, not VPN logic.
+- **L376** — Generated dependency-lock data. This record’s exact package/version/artifact or requirement is preserved here; the main guide explains the shared TOML schema, wheel compatibility, SHA-256 hashes and registry metadata. The package branch removes the redundant argparse dependency.
 
-
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.30 Package source — .envrc
 
@@ -8802,7 +8727,7 @@ layout uv
 - **L1** — Ask a direnv setup supporting layout uv to prepare/load a uv-managed Python environment for this directory. It affects development command lookup and Python package availability when that integration is active; the line does not itself contain or load VPN credentials.
 
 
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.31 Package source — .python-version
 
@@ -8824,7 +8749,7 @@ The preferred development Python series remains unchanged.
 - **L1** — Request the Python 3.13 series. The actual interpreter invoked by the scripts depends on PATH or sys.executable at runtime.
 
 
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.32 Package source — .gitignore
 
@@ -8926,7 +8851,7 @@ htmlcov/
 - **L38** — Ignore WebP images. These rules do not cover every possible image format; for example, the scanner can open BMP too, but no \*.bmp ignore rule exists here.
 
 
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
 ### 13.33 Package source — LICENSE
 
@@ -8972,8 +8897,179 @@ SOFTWARE.
 - **L15–L21** — A physical line in the all-capital warranty/liability paragraph. These are words in the license document, not settings that affect runtime error handling or network security.
 
 
-[[#13 Package branch — file map|↑ Package file map]]
+[[#4 Package branch — file map|↑ Package file map]]
 
+
+### 13.34 Package source — tests/test_totp.py
+
+Three test methods exercise valid export decoding, optional metadata/single-part batches, and nine invalid field-type or multi-part-batch inputs. The byte fixtures use a public RFC test key and are never personal authentication data.
+
+**Functions and their purpose**
+
+- **export_url**, L14–L16: Build migration-URL text from serialized test payload bytes.
+- **account_payload**, L19–L20: Wrap a small test account in the outer export field.
+- **ExportTests.test_decode_without_optional_metadata_and_generate_code**, L24–L37: Decode a public-key fixture without optional metadata and check its fixed-time six-digit code.
+- **ExportTests.test_decode_with_metadata_and_single_export_batch**, L39–L43: Decode metadata and an explicitly one-part export.
+- **ExportTests.test_wrong_field_types_and_multiple_batches_raise_value_error**, L45–L59: Require ValueError for nine labeled malformed or unsupported payloads.
+
+#### 13.34.1 L1–L13 · Module setup and definitions
+
+```python
+"""Export decoding checks using a public test key and malformed field types."""
+
+import base64
+import unittest
+from urllib.parse import urlencode
+
+from tifrvpn.totp import current_code, decode_export
+
+
+# Public RFC 6238 test key, followed by SHA1, six digits and TOTP fields.
+ACCOUNT = b"\x0a\x1412345678901234567890\x20\x01\x28\x01\x30\x02"
+
+
+```
+
+**Line-by-line explanation**
+
+- **L1** — Describe export-decoder regression checks using only public test data and deliberately malformed field types.
+- **L3** — Import base64 at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L4** — Import unittest at module scope, so the dependency is loaded when this module is imported. Importing its names does not call the later application operations.
+- **L5** — Bind urlencode from urllib.parse at module scope. These names are then available to the functions below without a function-local import.
+- **L7** — Bind current_code, decode_export from tifrvpn.totp at module scope. These names are then available to the functions below without a function-local import.
+- **L10–L11** — Define a minimal serialized TOTP account using the public RFC6238 SHA1 test key and the six-digit/TOTP enum fields. The b prefix and backslash-x escapes specify bytes, not a personal credential.
+
+#### 13.34.2 L14–L18 · export_url
+
+```python
+def export_url(payload):
+    query = urlencode({"data": base64.b64encode(payload).decode("ascii")})
+    return f"otpauth-migration://offline?{query}"
+
+
+```
+
+**Line-by-line explanation**
+
+- **L14** — Define a test helper converting serialized export bytes into migration-URL text.
+- **L15** — Encode payload bytes as Base64 ASCII text and URL-escape the data query parameter.
+- **L16** — Return the migration URL format expected by the production decoder.
+
+#### 13.34.3 L19–L22 · account_payload
+
+```python
+def account_payload(account):
+    return b"\x0a" + bytes([len(account)]) + account
+
+
+```
+
+**Line-by-line explanation**
+
+- **L19** — Define a helper wrapping one nested account in outer export field 1.
+- **L20** — Write the field-1 byte tag, a one-byte length and the account bytes. These deliberately small fixtures fit in a one-byte length; this helper is not a general export encoder.
+
+#### 13.34.4 L23–L23 · Module setup and definitions
+
+```python
+class ExportTests(unittest.TestCase):
+```
+
+**Line-by-line explanation**
+
+- **L23** — Group three export-decoding test methods in a unittest.TestCase class.
+
+#### 13.34.5 L24–L38 · ExportTests.test_decode_without_optional_metadata_and_generate_code
+
+```python
+    def test_decode_without_optional_metadata_and_generate_code(self):
+        account = decode_export(export_url(account_payload(ACCOUNT)))
+        self.assertEqual(
+            account,
+            {
+                "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
+                "name": "",
+                "issuer": "",
+                "algorithm": "SHA1",
+                "digits": 6,
+                "period": 30,
+            },
+        )
+        self.assertEqual(current_code(account, timestamp=59), "287082")
+
+```
+
+**Line-by-line explanation**
+
+- **L24** — Test that an account can omit optional name/issuer metadata and still produce the expected current code.
+- **L25** — Construct one valid export fixture and decode it through the real decoder.
+- **L26–L36** — Require the complete decoded account dictionary to match the public seed, empty metadata, SHA1, six digits and 30-second period. These are assertions on returned data, not printed secrets.
+- **L37** — Check the six-digit RFC-derived result at timestamp 59: 287082. The timestamp is fixed so the test does not depend on the current clock.
+
+#### 13.34.6 L39–L44 · ExportTests.test_decode_with_metadata_and_single_export_batch
+
+```python
+    def test_decode_with_metadata_and_single_export_batch(self):
+        account = ACCOUNT + b"\x12\x04TIFR\x1a\x03VPN"
+        decoded = decode_export(export_url(account_payload(account) + b"\x18\x01"))
+        self.assertEqual(decoded["name"], "TIFR")
+        self.assertEqual(decoded["issuer"], "VPN")
+
+```
+
+**Line-by-line explanation**
+
+- **L39** — Test optional metadata and an explicitly single-part export batch.
+- **L40** — Append the serialized name TIFR and issuer VPN to the valid account bytes.
+- **L41** — Append outer batch-size field3 with integer value1, then decode the resulting valid URL.
+- **L42** — Require the decoded account name to equal TIFR.
+- **L43** — Require the decoded issuer to equal VPN.
+
+#### 13.34.7 L45–L63 · ExportTests.test_wrong_field_types_and_multiple_batches_raise_value_error
+
+```python
+    def test_wrong_field_types_and_multiple_batches_raise_value_error(self):
+        payloads = {
+            "integer account": b"\x08\x01",
+            "integer secret": account_payload(ACCOUNT + b"\x08\x01"),
+            "integer name": account_payload(ACCOUNT + b"\x10\x01"),
+            "integer issuer": account_payload(ACCOUNT + b"\x18\x01"),
+            "byte algorithm": account_payload(ACCOUNT + b"\x22\x01x"),
+            "byte digits": account_payload(ACCOUNT + b"\x2a\x01x"),
+            "byte OTP type": account_payload(ACCOUNT + b"\x32\x01x"),
+            "byte batch size": account_payload(ACCOUNT) + b"\x1a\x01x",
+            "multiple batches": account_payload(ACCOUNT) + b"\x18\x02",
+        }
+        for name, payload in payloads.items():
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                decode_export(export_url(payload))
+
+
+if __name__ == "__main__":
+    unittest.main()
+```
+
+**Line-by-line explanation**
+
+- **L45** — Test nine malformed/unsupported payload cases that must consistently raise ValueError.
+- **L46** — Build a labeled dictionary of failing inputs; labels make a failing subtest easy to identify.
+- **L47** — Put an integer where the outer account byte payload is required.
+- **L48** — Replace the nested secret field with an integer instead of bytes.
+- **L49** — Replace the nested account-name field with an integer instead of UTF-8 bytes.
+- **L50** — Replace the nested issuer field with an integer instead of bytes.
+- **L51** — Replace the algorithm integer identifier with a byte field.
+- **L52** — Replace the digit-format integer identifier with a byte field.
+- **L53** — Replace the OTP-kind integer identifier with a byte field.
+- **L54** — Supply an outer batch-size field encoded as bytes instead of an integer.
+- **L55** — Supply integer batch-size2, which this single-part importer rejects.
+- **L56** — Close the table of failing inputs.
+- **L57** — Run the same rejection assertion for each labeled fixture.
+- **L58** — Report the case label separately and require ValueError. TypeError or a successful return would fail this assertion.
+- **L59** — Invoke the production decoder with that malformed fixture.
+- **L62** — Only start unittest directly when this test file is executed as a program.
+- **L63** — Ask unittest to discover/run the tests in this module during direct execution.
+
+[[#4 Package branch — file map|↑ Package file map]]
 
 ## 14 Package branch — transitional launchers explained
 
@@ -9314,4 +9410,453 @@ Once standard package installation became the supported model, the same interpre
 
 
 
-[[#10 Package branch — start here|↑ Current package branch overview]] · [[TIFR Vpn TUI#TIFR VPN — Complete Code Guide|↑ Original guide]]
+[[#1 Package branch — start here|↑ Current package branch overview]] · [[TIFR Vpn TUI#TIFR VPN — Complete Code Guide|↑ Original guide]]
+
+## 15 Understanding the November fixes — a beginner's walkthrough
+
+Read this section in order before using the source appendix as a reference. Examples containing `example` or the public RFC test key are teaching data. They are not your TIFR password, database master password or real authenticator seed.
+
+### 15.1 The five different things that were getting mixed together
+
+A **Python interpreter** is the program that runs Python code. A **module** is code that Python can load with `import`. A **package distribution** is something a package manager installs. A **native library** is compiled code supplied by your operating system. A **virtual environment** is a directory that gives one project its own Python executable links and installed Python packages.
+
+| Name in this project | What it is | Where it comes from |
+| --- | --- | --- |
+| Python 3.13 | The interpreter selected by `.python-version` | uv can supply a managed CPython installation. |
+| `.venv` | This checkout's local Python environment | `uv sync --locked` creates or synchronizes it. |
+| `PyGObject` / normalized name `pygobject` | The Python distribution providing GI bindings | Declared in `pyproject.toml`; installed by uv. |
+| `gi` | The Python import name exposed by PyGObject | You write `import gi` in Python. |
+| GTK 3, WebKitGTK 4.1, libsoup 3, libsecret | Native Linux libraries used by those bindings | Fedora packages, installed separately from Python packages. |
+| `Secret`, `Gtk`, `WebKit2`, `Soup` | Namespaces exposing particular native libraries through GI | Selected with `gi.require_version`, then imported from `gi.repository`. |
+| `pygobject-stubs` | Extra type descriptions for editor tools | Optional developer tooling; it is not in this snapshot's dependencies. |
+
+The crucial name difference is **install `PyGObject`, import `gi`**. Similar differences already exist elsewhere: install `PySide6`, import `PySide6.QtWidgets`; install `zxing-cpp`, import `zxingcpp`; install this distribution as `tifrvpn-tui`, import it as `tifrvpn`.
+
+`uv add gi` therefore does not name the binding distribution we need. The command used here was:
+
+```sh
+uv add PyGObject
+```
+
+That command added `pygobject>=3.58.1` to `pyproject.toml`, updated `uv.lock`, and installed PyGObject plus its Pycairo dependency into `.venv`. This dependency addition is already committed as `bf6fa28`. On a fresh clone you normally run `uv sync --locked`; you do not need to add the dependency again.
+
+The [PyGObject installation guide](https://pygobject.gnome.org/getting_started.html#fedora) documents both distribution-provided bindings and building the Python package inside a virtual environment.
+
+### 15.2 Why Python 3.14 was suggested earlier, and why it is not needed now
+
+The first environment problem was specific: Fedora's existing `gi` package lived under system Python 3.14, but the project's isolated environment used Python 3.13. Python 3.13 did not automatically search Python 3.14's packages, and compiled extensions built for one version cannot simply be assumed to work with another.
+
+There were two possible routes:
+
+| Route | What happens | Status in this guide |
+| --- | --- | --- |
+| Reuse Fedora's Python bindings | Use a compatible system interpreter and expose its site-packages to the environment. | Earlier troubleshooting alternative; not required by the final setup. |
+| Build PyGObject inside the project environment | Keep uv's Python 3.13 and compile the binding package for that interpreter. | The route now installed and documented. |
+
+The second route worked because your machine already had the native development libraries, compiler and Python 3.13 headers needed for the build. The resulting `gi` package now lives inside `.venv/lib/python3.13/site-packages/gi/`.
+
+The verified final state is **Python 3.13.18, PyGObject 3.58.1, and `include-system-site-packages = false`**. False is correct here: the environment contains its own Python bindings. Those bindings still call native Linux libraries installed outside `.venv`; an isolated Python environment does not contain an entire Linux operating system.
+
+### 15.3 Set up a fresh Fedora machine, step by step
+
+First install the project's runtime programs: NetworkManager with its OpenConnect VPN plugin, OpenConnect, KeePassXC including its CLI, GnuPG, a pinentry program and an unlocked desktop Secret Service keyring. Section 5 explains their separate jobs. Quiet browser sign-in also requires Xvfb, `xvfb-run` and `xauth`.
+
+For the GI libraries and their build prerequisites, the README records:
+
+```sh
+sudo dnf install gcc pkgconf-pkg-config gobject-introspection-devel cairo-gobject-devel gtk3 webkit2gtk4.1 libsoup3 libsecret
+```
+
+The compiler turns binding source code into a Python extension. Development packages provide declarations and build information the compiler needs. The GTK/WebKit/Soup/Secret runtime libraries provide the actual native functionality. If you choose Fedora's system Python rather than uv-managed CPython, it also needs matching Python development headers, normally supplied by `python3-devel`. The uv-managed Python used in this checkout already had its own headers.
+
+After cloning the repository, enter its actual directory and run:
+
+```sh
+cd /home/soham/projects/tifrvpn-tui
+uv sync --locked
+source .venv/bin/activate
+```
+
+On another person's computer, replace the `cd` path with that person's clone location. The directory name `.venv` is relative to the project directory in these commands.
+
+| Command part | Meaning |
+| --- | --- |
+| `uv` | The Python project/package manager. |
+| `sync` | Make the environment match the project's dependency selection and install the local project. |
+| `--locked` | Require the existing lockfile to be up to date; fail rather than silently changing the dependency selection. |
+| `source` | Execute the activation script in the current shell so its environment changes affect that shell. |
+| `.venv/bin/activate` | The script that puts this environment's command directory at the front of shell command lookup. |
+
+The [uv syncing documentation](https://docs.astral.sh/uv/concepts/projects/sync/) explains lock checking, environment synchronization and editable project installation. A source edit is visible to a new Python process because uv installs this checkout in editable mode; an already running process may need restarting.
+
+You can also use `uv run` without activating the shell:
+
+```sh
+uv run tifrvpn --help
+uv run python -c 'import sys, gi; print(sys.executable); print(gi.__file__)'
+```
+
+Do not keep recreating `.venv` every day. Use `uv sync --locked` after dependency or metadata updates, and `uv run ...` to run the selected environment's commands. `uv add` is for changing the project's dependency list, not a substitute for every ordinary launch.
+
+The native package names above are Fedora-specific. An Ubuntu/Debian/Arch setup needs equivalent libraries and development packages from that distribution; changing `dnf` to another command without changing package names is not a reliable installation recipe. A new machine must also meet the native library versions required by the locked PyGObject release.
+
+### 15.4 Check GI without signing in or reading your keyring
+
+Run this from the checkout after synchronization:
+
+```sh
+uv run python - <<'PY'
+import sys
+import gi
+
+print("Python:", sys.version.split()[0])
+print("Interpreter:", sys.executable)
+print("GI package:", gi.__file__)
+for name, version in [
+    ("Secret", "1"),
+    ("Gtk", "3.0"),
+    ("WebKit2", "4.1"),
+    ("Soup", "3.0"),
+]:
+    gi.require_version(name, version)
+
+from gi.repository import Secret, Gtk, WebKit2, Soup
+print("All four GI namespaces loaded")
+PY
+```
+
+The loop selects namespace versions; the `from` statement actually loads them. This verifies availability. It does not call `Secret.password_lookup_sync`, create a browser window or connect the VPN.
+
+If `import gi` fails, first inspect the interpreter and run `uv sync --locked`. If building PyGObject fails, read the first missing native dependency in the build output. If `gi` imports but a namespace is unavailable, check that namespace's native library/introspection package and requested version. Installing `pygobject-stubs` cannot replace a missing runtime library.
+
+### 15.5 Imports at the top: loading a function is different from calling it
+
+The source and test files now place their import statements at module scope, before function/class definitions. This was a requested style change. A **function definition** creates a function object. A **function call** executes that function's body.
+
+```python
+from tifrvpn import connect
+
+# The import above loads the function and its dependencies.
+# A later, explicit connect() call would perform the VPN operation.
+```
+
+For example, `keyring.py` now imports GI and Secret when Python loads that module. It still waits until a keyring function is called before looking up, saving or deleting a credential. `qr_import.py` imports Qt/NumPy/ZXing at module load but creates the window and starts scanning only inside `run()`.
+
+This has a practical tradeoff: dependencies must be available sooner. Importing `tifrvpn` now loads Secret bindings and cryptography. Importing `cli.py` also loads the Qt/QR libraries, including when asking for help. Missing dependencies can therefore fail during import, before the later function's `try` block is entered. A `try` block inside a function does not catch an exception that occurred earlier while importing its module.
+
+GI needs one small setup step between imports:
+
+```python
+import gi
+
+gi.require_version("Secret", "1")
+from gi.repository import Secret
+```
+
+`require_version` must happen before loading that namespace so GI knows which API version to use. These statements are together at the top of the file, not inside `_saved_login`. The `# noqa: E402` comment on the actual `from` line explains the deliberate exception to Ruff's general rule about imports preceding executable statements.
+
+The SSO worker uses the same ordering for GTK 3.0, WebKit2 4.1 and Soup 3.0. Namespace versions such as `"1"` and `"3.0"` are API identifiers; they are not the Python version.
+
+### 15.6 Read the type-checker errors before trying to silence them
+
+A **type** describes the kind of value: `str` is text, `int` is an integer, `bytes` is raw byte data, and `None` means no value. `int | bytes` means either kind is possible. It does not mean a value is both kinds at once.
+
+| Diagnostic | What the checker is telling you | Actual repair |
+| --- | --- | --- |
+| `str | None` cannot be passed to `Path` | This expression might have no string value. | In `config.py`, record the validated dictionary type after checking the JSON. |
+| `>` is unsupported for `bytes` and an integer | The decoder might compare raw data to a count. | Check `isinstance(value, int)` before the comparison. |
+| `.decode()` is unavailable on an integer | A serialized text field might contain the wrong kind of value. | Require bytes before interpreting them as UTF-8 text. |
+| `None` is not subscriptable | The account might not exist when looking up `account["secret"]`. | Return immediately if no account has been decoded. |
+| `QCoreApplication` has no `clipboard` | The general application instance type is too broad. | Require a `QApplication` and obtain its clipboard. |
+| `BarcodeFormat` is not `BarcodeFormats` | A single format identifier is not the collection type expected by the installed API's stubs. | Explicitly construct `BarcodeFormats(BarcodeFormat.QRCode)`. |
+
+Most fixes add real validation. `cast` is a different tool used only where earlier validation already proves the type. In `config.py`, the JSON must be a dictionary containing only the three permitted string keys and nonblank string values; then `cast(dict[str, str], settings)` tells the checker what has been established. It returns the same dictionary. It does not turn an integer into text or make invalid JSON safe. See [Python's typing documentation](https://docs.python.org/3.13/library/typing.html#typing.cast).
+
+### 15.7 How the authenticator decoder works and why each new check exists
+
+The QR image does not directly contain a ready-to-use Python dictionary. The program processes several representations in order:
+
+```text
+Image pixels
+  → ZXing finds QR text
+  → otpauth-migration://offline?... URL
+  → Base64 text in the data query parameter
+  → serialized bytes
+  → numbered fields containing integers or bytes
+  → one validated account dictionary
+  → current TOTP code
+```
+
+**Base64** represents byte data as text suitable for the URL. **Base32** is the textual representation used for the extracted authenticator seed. These encodings are not encryption: encoding the seed does not protect it from someone who can read it.
+
+`_fields(data: bytes) -> Iterator[tuple[int, int | bytes]]` describes the parser's output. Read it from the inside outward: each yielded item is a pair; the first part is an integer field number, and the second is an integer or bytes. An `Iterator` supplies those pairs one at a time. `yield` emits one pair and preserves the parser's position for the next request.
+
+A **wire type** is the serialized format's instruction for reading the next value. Type 0 reads a variable-length integer. Type 2 reads a length and then that many bytes. Types 1 and 5 preserve fixed-size byte sequences. The parser's supported wire types are checked explicitly, and it rejects invalid/truncated input.
+
+Do not confuse the outer export field numbers with the inner account field numbers:
+
+| Level | Field number | Meaning used by this decoder | Required kind |
+| --- | ---: | --- | --- |
+| Outer export | 1 | Serialized account data | bytes |
+| Outer export | 3 | Export batch size, when supplied | integer; a value greater than 1 is rejected |
+| Inner account | 1 | Authenticator secret | nonempty bytes |
+| Inner account | 2 | Account name | bytes; defaults to empty bytes if absent |
+| Inner account | 3 | Issuer | bytes; defaults to empty bytes if absent |
+| Inner account | 4 | Algorithm identifier | supported integer: 1, 2 or 3 |
+| Inner account | 5 | Digit-format identifier | supported integer: 1 or 2 |
+| Inner account | 6 | OTP kind | must equal 2, the TOTP kind used here |
+
+The decoder requires exactly one account. It rejects multi-part batches when the batch-size field indicates more than one part. Then it checks each value before using operations that require a particular kind. For example, `.decode("utf-8")` converts byte-encoded name/issuer text to Python strings; it cannot operate on an integer.
+
+Local variables such as `secret`, `name`, `issuer`, `algorithm` and `digit_format` make the validation visible to both the reader and type checker. The program validates that variable, then uses that same variable, rather than repeatedly performing dictionary lookups whose types can be difficult to track.
+
+The supported algorithm identifiers map to SHA1/SHA256/SHA512. Digit-format 1 maps to 6 displayed digits and 2 maps to 8 digits; the identifier is not itself the final number of digits. The returned account uses a 30-second period, matching this implementation's assumption. Decoding prepares data for manual KeePassXC setup; it does not write the vault or create a new enrollment at TIFR.
+
+### 15.8 Why `ValueError` remains despite the Ruff warning
+
+There are two different situations to distinguish. If a caller supplies an inappropriate argument type to a public function, `TypeError` is normally the relevant exception. If the caller supplies a text QR export but its internal serialized fields are malformed, this decoder reports invalid input with `ValueError`.
+
+Ruff's `TRY004` rule recognizes an `isinstance` check followed by a non-`TypeError` exception. Its recommendation is useful in general, but it does not decide the decoder's public error convention. The two checks in `totp.py` use:
+
+```python
+raise ValueError("Invalid export QR.")  # noqa: TRY004 - Malformed QR data.
+```
+
+Here `#` starts a Python comment. `noqa: TRY004` asks Ruff to skip that one rule for this line. The explanation records why. This does not disable the validation, catch the exception, suppress all warnings or alter execution. The malformed-export tests explicitly require `ValueError`.
+
+This is a deliberate project choice; it is not a claim that Ruff recommends `ValueError` for every type check. See the [TRY004 rule](https://docs.astral.sh/ruff/rules/type-check-without-type-error/).
+
+### 15.9 The QR window, application object and clipboard fixes
+
+Qt offers a general `QCoreApplication` and richer graphical application classes. A returned base-class object is not automatically known to support every subclass feature. Widgets require `QApplication`. The scanner now creates or reuses an instance, verifies its class and then obtains the clipboard:
+
+```python
+app = QApplication.instance() or QApplication([])
+if not isinstance(app, QApplication):
+    raise RuntimeError("The QR importer requires a QApplication instance.")
+clipboard = app.clipboard()
+```
+
+If an existing application object is unsuitable, the program reports that condition before trying to create widgets. The local `clipboard` variable refers to the same clipboard interface used by the copy and cleanup handlers. It is not a copy of the clipboard's contents. The [QApplication documentation](https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/QApplication.html) describes the widget application object.
+
+Initially `self.account` is `None`. After a valid scan it becomes the decoded dictionary. Normally the Copy button is disabled until then, but the handler must also be safe if called directly or before decoding. The new guard returns without reading a missing account:
+
+```python
+if self.account is None:
+    return
+```
+
+Once an account exists, the handler copies its seed and schedules cleanup after 60,000 milliseconds. Cleanup clears the live clipboard only if it still contains the seed this window copied. If you copied other text afterward, that text is left alone. Closing the window also requests cleanup. The timer depends on the event loop running; clipboard-manager history is independent of the live clipboard.
+
+The ZXing fix is an explicit wrapper:
+
+```python
+formats=zxingcpp.BarcodeFormats(zxingcpp.BarcodeFormat.QRCode)
+```
+
+`BarcodeFormat.QRCode` identifies QR format. `BarcodeFormats(...)` constructs the format-selection object required by the installed `read_barcodes` signature. The native scan was checked with an in-memory QR carrying the public RFC test key, not personal credentials.
+
+### 15.10 What the tests prove, and what the editor tools prove
+
+| Tool/check | Question answered | Result recorded for this snapshot |
+| --- | --- | --- |
+| Pyright on `config.py`, `totp.py`, `gui/qr_import.py` | Are these checked expressions compatible with the available type information? | Zero errors/warnings for these targets. |
+| Ruff `TRY004` check on `totp.py` | Are there unsuppressed violations of this one selected rule? | Pass. This is not an all-rules Ruff result. |
+| `unittest` suite | Do the defined offline behaviors match their assertions? | 53 test methods pass. |
+| GI namespace import check | Can this Python environment load Secret, GTK, WebKit2 and Soup? | All four load with Python 3.13.18 and local PyGObject. |
+| Offscreen scanner check | Can native QR decoding and copy/cleanup behavior work with a mocked clipboard? | Pass; no real desktop clipboard or camera used. |
+
+Three new test methods live in `tests/test_totp.py`. They check decoding without optional name/issuer metadata, decoding with metadata and a one-part export, and rejecting malformed field types/multiple batches. The last method loops through nine cases using `subTest`, so “53 tests” means 53 methods, not merely 53 individual assertions or input examples. The public RFC key yields `287082` at the specified test timestamp in the six-digit case.
+
+Moving keyring imports changed how tests replace dependencies. Patching `sys.modules` inside a test is too late to replace a name already imported into `keyring.py`. `patch.object(keyring, "Secret", self.secret)` replaces the name the production function actually looks up, then restores it after the test.
+
+The import test now supplies fake dependency modules to an isolated child interpreter. Importing names is permitted; starting application operations is forbidden. The fake `gi.require_version` accepts version selection because that belongs to import setup. Calls to external programs, sockets and configuration-file reads are blocked. This proves the application's import behavior under the supplied test interfaces; it does not prove that missing native dependencies can be ignored on a real installation.
+
+For editor warnings about GI names, first verify the real interpreter and binding imports. GI creates some namespaces dynamically, so optional PyGObject stubs can improve static analysis. Stubs describe interfaces to tools; they do not install GTK, WebKit or a keyring service. Restart Neovim's Python language server with `:LspRestart` after changing the environment. A checker producing no errors is useful evidence, but it does not prove a live VPN login works.
+
+### 15.11 Understand the four commits and inspect their exact lines
+
+The four recommended commits are now present. They are recorded history, not commands that still need to be repeated:
+
+| Commit | Message | Files/purpose |
+| --- | --- | --- |
+| `bf6fa28` | `fix: install PyGObject in the uv environment` | `pyproject.toml` and `uv.lock`: declare and lock the Python GI dependency. |
+| `41d6410` | `fix: validate authenticator export field types` | `src/tifrvpn/totp.py` and new `tests/test_totp.py`: validation, annotations, narrow Ruff exceptions and regression tests. |
+| `6d5aa1a` | `refactor: move imports to module scope and fix QR scanner types` | Seven source files and four tests: import placement, revised import mocks, Qt/ZXing/copy fixes. |
+| `589be0d` | `docs: explain uv installation and native GI dependencies` | `README.md`: install through ordinary uv with native build prerequisites. |
+
+The earlier configuration fix is already committed separately as `507b4b3`. Line numbers in the source appendix refer to the current file. Commit diffs show the before/after locations at that point in history. If later edits insert lines, an old line number can move while the commit's recorded diff remains available.
+
+Inspect the actual committed patches without modifying anything:
+
+```sh
+cd /home/soham/projects/tifrvpn-tui
+git show --stat bf6fa28
+git show --format=fuller --unified=3 41d6410 -- src/tifrvpn/totp.py tests/test_totp.py
+git show --format=fuller --unified=3 6d5aa1a -- src/tifrvpn/gui/qr_import.py
+git show --format=fuller --unified=3 589be0d -- README.md
+git status --short
+```
+
+`--` separates Git options/revisions from the following file paths. `--unified=3` requests three surrounding context lines. In a diff, `-` marks old removed text and `+` marks new added text; those symbols are not prefixes to paste into the Python file.
+
+### 15.12 How to commit future edits without confusing Git with installation
+
+A **working tree** contains the files you are editing. The **staging area**, also called the index, holds the version selected for the next commit. A **commit** saves that staged snapshot to local Git history. A **push** sends commits to a remote repository. Installing/synchronizing a Python environment is a separate operation.
+
+```text
+edit a file
+  → inspect with git diff
+  → select changes with git add
+  → inspect with git diff --cached
+  → record with git commit
+```
+
+For a future dependency change, a typical sequence is:
+
+```sh
+uv add SOME_PACKAGE
+git diff -- pyproject.toml uv.lock
+git add -- pyproject.toml uv.lock
+git diff --cached
+git commit -m "build: add SOME_PACKAGE dependency"
+```
+
+`SOME_PACKAGE` is a placeholder; replace it with the real distribution name. `uv add` changes the dependency files and environment. `git add` selects file content for a commit. They are different commands despite sharing the word “add”.
+
+For future code changes, choose a concrete message describing the resulting behavior. Example command structure:
+
+```sh
+git diff -- src/tifrvpn/totp.py
+git add -p -- src/tifrvpn/totp.py
+git diff --cached
+git commit -m "fix: describe the actual decoder behavior changed"
+```
+
+`git add -p` offers **hunks**, which are groups of nearby changed lines. `y` stages the displayed hunk; `n` leaves it unstaged; `s` splits it when possible; `e` opens manual patch editing; `q` stops the selection session. A numeric line reference is a navigation aid, not a direct staging command. Stage whole files with `git add -- path/to/file` when all their changes belong together. For a new untracked file, `git add -N -- path/to/file` makes it available to interactive patch selection; ordinary `git add` is simpler when the whole new file belongs in the commit.
+
+Always inspect `git diff --cached`: it shows what will be recorded, including anything staged before your most recent command. If you stage a file and then edit it again, the later edit is not automatically added to the staged copy. Stage again if that later edit belongs in the same commit. [The Git book](https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository) explains this working-tree/index distinction.
+
+To record changes only to this external Research note, first find which repository, if any, tracks it:
+
+```sh
+git -C "/home/soham/projects/Research/Linux/TIFR Vpn" rev-parse --show-toplevel
+```
+
+If that directory is in a repository and the note belongs there, review and stage it using that repository's root and the actual tracked file path. If Git says it is not a repository, the note is still saved normally; it simply is not part of Git history there. Do not try to add this external path from the `tifrvpn-tui` repository, and do not create a new repository just to clear that message unless you intend to start managing the Research notes with Git.
+
+### 15.13 Read the copy handler one symbol at a time
+
+This short fragment combines several unfamiliar Python ideas, so read it as a sequence of actions:
+
+```python
+if self.account is None:
+    return
+self.copied = self.account["secret"]
+clipboard.setText(self.copied)
+QTimer.singleShot(60000, self.clear_clipboard)
+```
+
+| Part | Meaning in this window |
+| --- | --- |
+| `class Scanner(QWidget)` | Define a kind of window based on Qt's QWidget class. A class describes objects; creating `Scanner()` makes one actual window object. |
+| `self` | The particular Scanner object whose method is running. It is how the method accesses that window's stored state. |
+| `self.account` | An attribute stored on that window. Initially it holds None; after successful decoding it holds a dictionary. |
+| `None` | The special value meaning no account has been stored yet. It is not the text `"None"` and is not an empty dictionary. |
+| `is None` | Check specifically for that no-value state. |
+| `if ...:` and indentation | Run the indented statements only when the condition is true. The indentation is part of Python's syntax. |
+| `return` | Finish this handler immediately. Here it does not close the window, exit Python or disconnect a VPN. |
+| `self.account["secret"]` | Look up the value under the dictionary key named `"secret"`. The preceding guard ensures the account is not None. |
+| `self.copied = ...` | Store that value as the window's remembered copied seed. One equals sign assigns a value; it is not an equality test. |
+| `clipboard.setText(...)` | Call the clipboard object's setText method now, passing the seed as its argument. |
+| `60000` | Sixty thousand milliseconds, which is 60 seconds. |
+| `self.clear_clipboard` without `()` | Pass the method itself as a callback for Qt to call later. |
+| `self.clear_clipboard()` with `()` | Call the method immediately instead. That is not what the timer line does. |
+
+A **callback** is a function or method handed to another component so that component can call it at the appropriate time. The Qt **event loop** waits for events such as button clicks and timer deadlines and runs their callbacks. `app.exec()` starts that loop. The handler returns quickly; the future cleanup is scheduled rather than implemented by blocking the window for a minute.
+
+Two related dictionary forms also appear in the decoder: `account.get(2, b"")` reads a field with an explicit fallback when absent, while `account[1]` requires that key to exist. The `b` prefix creates bytes; ordinary quotes create text. `bytes.decode("utf-8")` turns encoded text bytes into a Python string, and Base32 encoding gives the seed its setup-key text representation. These conversions change representation; they do not encrypt the data.
+
+When reading a line, first ask which value it reads, then which check establishes that the value is usable, then which operation actually changes something. That order makes the guard, dictionary lookup and clipboard write easier to distinguish.
+
+### 15.14 File-and-line commit reference with the exact Git commands
+
+This table preserves the file/line breakdown behind the four commits. Line numbers refer to the source at `589be0d`. A range can include unchanged context. For moved imports, a listed later line may be the current location beside a deletion rather than a line containing newly added code. Use `git show COMMIT -- FILE` to see the precise historical patch.
+
+| Commit | File relative to the checkout | Current lines affected or beside deleted imports |
+| --- | --- | --- |
+| `bf6fa28` | `pyproject.toml` | 13 |
+| `bf6fa28` | `uv.lock` | 203–222, 232–240, 338, 347 |
+| `41d6410` | `src/tifrvpn/totp.py` | 8, 12, 15, 28, 47, 66–100 |
+| `41d6410` | `tests/test_totp.py` | 1–63; the complete new test file |
+| `6d5aa1a` | `src/tifrvpn/_sso_worker.py` | 8–12 |
+| `6d5aa1a` | `src/tifrvpn/cli.py` | 8–12, 138, 197, 231 |
+| `6d5aa1a` | `src/tifrvpn/gui/credential_setup.py` | 1–8 |
+| `6d5aa1a` | `src/tifrvpn/gui/qr_import.py` | 1–33, 174, 212–220 |
+| `6d5aa1a` | `src/tifrvpn/gui/sso.py` | 8–20, 63 |
+| `6d5aa1a` | `src/tifrvpn/keyring.py` | 3–13 |
+| `6d5aa1a` | `src/tifrvpn/networkmanager.py` | 4, 12–14, 89, 166 |
+| `6d5aa1a` | `tests/test_cli.py` | 9, 70 |
+| `6d5aa1a` | `tests/test_imports.py` | 1–37 |
+| `6d5aa1a` | `tests/test_keyring.py` | 4–5, 16 |
+| `6d5aa1a` | `tests/test_networkmanager.py` | 8–9, 98 |
+| `589be0d` | `README.md` | 27–28, 32–50, 56–68, 75–76 |
+
+The stage/commit commands below show how these changes were grouped. **The commits already exist. Do not repeat them as an installation step.** Use them as a reference when you have equivalent pending edits, or inspect the existing commits with `git show` as explained above. `git add` stages whole named files; the table's line numbers do not restrict what it stages. To select only some changed lines, use the interactive staging procedure in section 15.12.
+
+**Dependency declaration and lockfile:**
+
+```sh
+cd /home/soham/projects/tifrvpn-tui
+git add -- pyproject.toml uv.lock
+git diff --cached
+git commit -m "fix: install PyGObject in the uv environment"
+```
+
+**Export decoder and regression tests:**
+
+```sh
+git add -- src/tifrvpn/totp.py tests/test_totp.py
+git diff --cached
+git commit -m "fix: validate authenticator export field types"
+```
+
+**Import organization, matching tests and QR scanner fixes:**
+
+```sh
+git add -- \
+  src/tifrvpn/_sso_worker.py \
+  src/tifrvpn/cli.py \
+  src/tifrvpn/gui/credential_setup.py \
+  src/tifrvpn/gui/qr_import.py \
+  src/tifrvpn/gui/sso.py \
+  src/tifrvpn/keyring.py \
+  src/tifrvpn/networkmanager.py \
+  tests/test_cli.py \
+  tests/test_imports.py \
+  tests/test_keyring.py \
+  tests/test_networkmanager.py
+
+git diff --cached
+git commit -m "refactor: move imports to module scope and fix QR scanner types"
+```
+
+The backslash at the end of each continued shell line joins it to the next line, making this one `git add` command. This grouping includes the entire QR importer because its import movement, application check, format wrapper and clipboard guard share that file.
+
+**Installation documentation:**
+
+```sh
+git add -- README.md
+git diff --cached
+git commit -m "docs: explain uv installation and native GI dependencies"
+```
+
+After any real future changes, run the checks and inspect what remains:
+
+```sh
+uv run python -B -m unittest discover -s tests -v
+git status --short
+git log -4 --oneline
+```
+
+A successful commit normally consumes the staged changes. If you repeat a commit command in a clean checkout, Git reports there is nothing new to commit; it does not recreate the old commit. This Research guide is a separate file from README and from the repository documentation copy. Recording future edits to either copy requires selecting the actual file that changed in its owning repository.
