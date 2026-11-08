@@ -1,16 +1,16 @@
 """Store only this application's sign-in state in desktop Secret Service."""
 
+import gi
+
 from .config import URL
 from .errors import AuthenticationError
+
+gi.require_version("Secret", "1")
+from gi.repository import Secret  # noqa: E402 - Select the namespace version first.
 
 
 def _saved_login(kind, value=None, *, forget=False, on_progress=None):
     """Keep only this helper's session state in the desktop Secret Service."""
-    import gi
-
-    gi.require_version("Secret", "1")
-    from gi.repository import Secret
-
     schema = Secret.Schema.new(
         "in.res.tifr.vpn",
         Secret.SchemaFlags.NONE,

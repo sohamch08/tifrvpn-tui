@@ -5,8 +5,11 @@ import subprocess
 import sys
 
 from . import credentials, vpn
+from . import networkmanager as nm
 from .config import load_config
-from .errors import ConnectionBusy, VPNError
+from .errors import ConnectionBusy, ProfileNotFound, VPNError
+from .gui.credential_setup import setup
+from .gui.qr_import import run
 
 USAGE = "Usage: tifrvpn [-c [--quiet]|-d|-s|--setup|--forget-login|--help]"
 HELP = """Usage: tifrvpn [-c [--quiet]|-d|-s|--setup|--forget-login] (no option: toggle)
@@ -133,9 +136,6 @@ def _vpn_main(argv):
     if action == "-c":
         return _connect(quiet)
     # No arguments: retain the original toggle, including transitional states.
-    from . import networkmanager as nm
-    from .errors import ProfileNotFound
-
     nm.require_available()
     try:
         state = nm.state(nm.profile_uuid())
@@ -195,8 +195,6 @@ def otp_main(argv=None):
         config = load_config()
         if args.setup:
             credentials.validate_config(config)
-            from .gui.credential_setup import setup
-
             return setup(
                 config.password_file,
                 config.database,
@@ -231,8 +229,6 @@ def import_totp_main(argv=None):
     )
     args = parser.parse_args(argv)
     try:
-        from .gui.qr_import import run
-
         return run(image=args.image)
     except Exception:  # noqa: BLE001 - Never expose authentication data from backend errors.
         print(

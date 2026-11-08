@@ -5,6 +5,8 @@ import subprocess
 import unittest
 from unittest.mock import Mock, patch
 
+from cryptography import x509
+
 from tifrvpn import networkmanager as nm
 from tifrvpn.errors import NetworkManagerError, ProfileNotFound
 
@@ -94,8 +96,6 @@ class NetworkManagerTests(unittest.TestCase):
         self.assertEqual(raised.exception.returncode, 10)
 
     def test_session_secrets_use_only_an_inherited_memory_file(self):
-        from cryptography import x509
-
         connection = Mock()
         connection.__enter__ = Mock(return_value=connection)
         connection.__exit__ = Mock(return_value=False)

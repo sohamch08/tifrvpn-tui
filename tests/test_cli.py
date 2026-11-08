@@ -6,6 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from tifrvpn import cli
+from tifrvpn import networkmanager as nm
 from tifrvpn.errors import NetworkManagerError
 from tifrvpn.vpn import VPNStatus
 
@@ -67,8 +68,6 @@ class CLITests(unittest.TestCase):
                 self.assertEqual((code, out, err), (0, cli.HELP + "\n", ""))
 
     def test_toggle_preserves_transitional_state_behavior(self):
-        from tifrvpn import networkmanager as nm
-
         for state, connects in [
             ("activated", False),
             ("activating", False),

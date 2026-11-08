@@ -1,33 +1,36 @@
-"""Local webcam/image importer; no GUI dependencies load at import time."""
+"""Local webcam/image importer; scanning starts only when run is called."""
 
 import time
+
+import numpy as np
+import zxingcpp
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QImage, QPixmap
+from PySide6.QtMultimedia import (
+    QCamera,
+    QMediaCaptureSession,
+    QMediaDevices,
+    QVideoSink,
+)
+from PySide6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QFileDialog,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from ..totp import current_code, decode_export
 
 
 def run(*, image=False):
-    import numpy as np
-    import zxingcpp
-    from PySide6.QtCore import Qt, QTimer
-    from PySide6.QtGui import QImage, QPixmap
-    from PySide6.QtMultimedia import (
-        QCamera,
-        QMediaCaptureSession,
-        QMediaDevices,
-        QVideoSink,
-    )
-    from PySide6.QtWidgets import (
-        QApplication,
-        QCheckBox,
-        QFileDialog,
-        QLabel,
-        QLineEdit,
-        QPushButton,
-        QVBoxLayout,
-        QWidget,
-    )
-
     app = QApplication.instance() or QApplication([])
+    if not isinstance(app, QApplication):
+        raise RuntimeError("The QR importer requires a QApplication instance.")
+    clipboard = app.clipboard()
 
     class Scanner(QWidget):
         def __init__(self):
@@ -168,7 +171,7 @@ def run(*, image=False):
             )[:, : gray.width()]
             try:
                 results = zxingcpp.read_barcodes(
-                    pixels, formats=zxingcpp.BarcodeFormat.QRCode
+                    pixels, formats=zxingcpp.BarcodeFormats(zxingcpp.BarcodeFormat.QRCode)
                 )
                 for result in results:
                     self.account = decode_export(result.text)
@@ -206,13 +209,15 @@ def run(*, image=False):
                 )
 
         def copy_key(self):
+            if self.account is None:
+                return
             self.copied = self.account["secret"]
-            app.clipboard().setText(self.copied)
+            clipboard.setText(self.copied)
             QTimer.singleShot(60000, self.clear_clipboard)
 
         def clear_clipboard(self):
-            if self.copied and app.clipboard().text() == self.copied:
-                app.clipboard().clear()
+            if self.copied and clipboard.text() == self.copied:
+                clipboard.clear()
             self.copied = None
 
         def closeEvent(self, event):
