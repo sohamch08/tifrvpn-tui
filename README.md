@@ -24,37 +24,56 @@ Install these dependencies using your preferred package manager:
   program for unlocking your GPG key.
 - **Desktop integration:** GTK 3, WebKitGTK 4.1, libsoup 3, libsecret, and their
   GObject introspection bindings, accessible through Python's PyGObject (`gi`).
-- **Python packages:** `cryptography` and `PySide6`; also `numpy` and `zxing-cpp`
-  if you use the optional Google Authenticator QR importer.
+- **Python packages:** `PyGObject` (imported as `gi`), `cryptography`, `PySide6`,
+  `numpy`, and `zxing-cpp`.
 - **Background sign-in (optional):** Xvfb, the `xvfb-run` wrapper, and `xauth`.
 
 Package names vary between distributions. The project's Python dependencies are
-declared in `pyproject.toml`. When using a virtual environment with system-installed
-PyGObject, create it from system Python with access to system site packages.
+declared in `pyproject.toml`. uv installs PyGObject into the project's own `.venv`,
+building it and Pycairo for that environment's Python. This requires a C compiler
+and the native development libraries in addition to the runtime libraries. On
+Fedora, install the GI runtime/build prerequisites with:
+
+```sh
+sudo dnf install gcc pkgconf-pkg-config gobject-introspection-devel cairo-gobject-devel gtk3 webkit2gtk4.1 libsoup3 libsecret
+```
+
+The chosen Python also needs its development headers. uv-managed CPython includes
+these; for Fedora's system Python, install `python3-devel` as well. The packages
+above cover GI support; the VPN and credential tools listed earlier are still
+required separately.
+
+Imports are grouped at the top of each module. Importing the core package loads
+the Secret Service bindings and cryptography; importing the command adapters
+also loads Qt and the QR libraries, even for `--help`. The SSO worker loads its
+GTK/WebKit bindings at module import. Imports do not open dialogs, access the
+keyring, scan a camera, or start a VPN connection.
 
 NetworkManager must be running. Your desktop must provide a working, unlocked
 Secret Service keyring, such as GNOME Keyring. Minimal window-manager sessions
 may need desktop keyring and PolicyKit authentication-agent setup first.
 
-Install this checkout as a Python package, **as your normal user**. Create a
-virtual environment with access to your system Python bindings:
+Install this checkout as a Python package, **as your normal user**, after
+installing the system dependencies above:
 
 ```sh
-python3 -m venv --system-site-packages .venv
-.venv/bin/python -m pip install .
+uv sync --locked
 source .venv/bin/activate
 ```
 
-Use system Python 3.13 or newer when creating the environment. If you already
-have a suitable environment, activate it and run `python -m pip install .`.
+uv uses the Python version in `.python-version` (currently 3.13) and creates an
+isolated `.venv`. `import gi` comes from its installed PyGObject dependency;
+neither Python 3.14 nor `--system-site-packages` is required. If you already
+have a suitable environment, you can instead run `uv pip install --python
+/path/to/environment/bin/python .`.
 The installation creates `tifrvpn`, `tifr-otp` and `tifr-import-totp` in that
 environment's command directory and makes `import tifrvpn` available.
 Activate the environment whenever you want to use its commands.
 
 Python dependencies are installed from `pyproject.toml`; the system dependencies
 listed above must be installed separately. After updating the checkout, rerun
-the package installation to update the installed version. For development,
-use the editable installation described below.
+`uv sync --locked`. uv installs this checkout in editable mode; other package
+installation routes are described below.
 
 ## 2. Save your own login in KeePassXC
 
