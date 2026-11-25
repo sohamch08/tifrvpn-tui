@@ -68,12 +68,35 @@ have a suitable environment, you can instead run `uv pip install --python
 /path/to/environment/bin/python .`.
 The installation creates `tifrvpn`, `tifr-otp` and `tifr-import-totp` in that
 environment's command directory and makes `import tifrvpn` available.
-Activate the environment whenever you want to use its commands.
+Activating the environment makes all three commands available in the current shell.
 
 Python dependencies are installed from `pyproject.toml`; the system dependencies
 listed above must be installed separately. After updating the checkout, rerun
 `uv sync --locked`. uv installs this checkout in editable mode; other package
 installation routes are described below.
+
+### Run `tifrvpn` from `~/bin`
+
+To use `tifrvpn` from any directory without activating the environment, copy
+the launcher after running `uv sync --locked`. From the repository directory, run
+
+```sh
+mkdir -p ~/bin
+cp -i .venv/bin/tifrvpn ~/bin/tifrvpn
+```
+
+If `~/bin` is missing from your `PATH`, add `export PATH="$HOME/bin:$PATH"`
+to `~/.bashrc` (Bash) or `~/.zshrc` (Zsh). Open a new terminal and check
+
+```sh
+command -v tifrvpn   # should show the copy in your ~/bin
+tifrvpn --help
+```
+
+The launcher stores the absolute path to Python inside the checkout's `.venv`.
+Keep the checkout and its environment in place. If you move or clone the project
+elsewhere, create a fresh environment there with `uv sync --locked` and copy
+the new launcher.
 
 ## 2. Save your own login in KeePassXC
 
